@@ -1,0 +1,45 @@
+# Example task definitions for grind loop
+# Run with: uv run grind.py batch examples/example-tasks.yaml
+
+tasks:
+  # Basic task - just the essentials
+  - task: "Fix ruff linting errors"
+    verify: "ruff check ."
+    model: haiku
+    max_iterations: 5
+
+  # Standard task with hooks
+  - task: "Fix failing unit tests"
+    verify: "pytest tests/unit/ -v"
+    model: sonnet
+    max_iterations: 10
+    hooks:
+      pre_grind:
+        - "/compact"
+      post_grind:
+        - "/test tests/unit/"
+
+  # Complex task with custom prompt
+  - task: "Implement user authentication with OAuth"
+    verify: "pytest tests/auth/ -v && ruff check . && mypy ."
+    model: opus
+    max_iterations: 20
+    hooks:
+      pre_grind:
+        - "/compact"
+      post_iteration:
+        - command: "/compact"
+          trigger: every_n
+          trigger_count: 5
+      post_grind:
+        - "/code-review"
+        - "/security-audit"
+    prompt_config:
+      preamble: "You are a senior backend engineer specializing in authentication."
+      additional_rules:
+        - "Follow OAuth 2.0 best practices"
+        - "Store secrets securely"
+        - "Add comprehensive tests"
+      additional_context: |
+        Tech stack: FastAPI, SQLAlchemy, PostgreSQL
+        OAuth provider: Google

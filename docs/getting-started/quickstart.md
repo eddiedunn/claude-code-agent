@@ -218,42 +218,9 @@ examples/
   example-tasks.yaml   # Example task definitions
 ```
 
-## Using with Claude Code
-
-Grind Loop is designed to work seamlessly with [Claude Code](https://claude.ai/code).
-
-### Quick Setup
-
-```bash
-# Install dependencies
-uv sync
-
-# Install slash commands globally (optional but recommended)
-make install-commands
-```
-
-Now use `/generate-tasks` in any Claude Code conversation to automatically generate task files!
-
-See **[Using with Claude Code](docs/guide/using-with-claude-code.md)** for complete integration guide.
-
 ## Documentation
 
-**📚 [Full Documentation](https://eddiedunn.github.io/claude-code-agent/)** (MkDocs site)
-
-### Quick Links
-- **[Using with Claude Code](docs/guide/using-with-claude-code.md)** - Integration guide and workflows
-- **[Getting Started](docs/getting-started/installation.md)** - Installation and setup
-- **[Features Guide](docs/guide/features.md)** - Complete feature reference
-- **[Architecture](docs/architecture/overview.md)** - System design
-- **[SDK Reference](docs/sdk/overview.md)** - Claude Agent SDK docs
-
-### Local Development
-```bash
-# View documentation locally
-make docs
-
-# Or manually:
-uv run mkdocs serve
-```
-
-Then open http://127.0.0.1:8000
+- **[README.md](./README.md)** - Quick start and basic usage (you are here)
+- **[FEATURES.md](./FEATURES.md)** - Complete features guide (models, hooks, prompts)
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System design and module breakdown
+- **[REFACTORING_SUMMARY.md](./REFACTORING_SUMMARY.md)** - Why we refactored and what changed

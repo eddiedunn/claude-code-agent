@@ -1,0 +1,25 @@
+---
+# Load platform dependency versions from manifest
+# This task file should be included at the start of playbooks that deploy
+# Python packages (auth-gateway, platform-coordinator)
+
+- name: Load platform dependency versions
+  ansible.builtin.include_vars:
+    file: "{{ playbook_dir }}/../platform-dependency-versions.yml"
+  delegate_to: localhost
+  run_once: true
+
+- name: Set version facts for all hosts
+  ansible.builtin.set_fact:
+    auth_gateway_version: "{{ auth_gateway }}"
+    platform_coordinator_version: "{{ platform_coordinator }}"
+    uv_version: "{{ uv }}"
+
+- name: Display loaded versions
+  ansible.builtin.debug:
+    msg:
+      - "Platform dependency versions loaded:"
+      - "  auth-gateway: {{ auth_gateway_version }}"
+      - "  platform-coordinator: {{ platform_coordinator_version }}"
+      - "  uv: {{ uv_version }}"
+  run_once: true

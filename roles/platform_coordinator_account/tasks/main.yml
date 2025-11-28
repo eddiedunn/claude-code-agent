@@ -1,0 +1,22 @@
+---
+# Setup Python virtual environment for coordinator account
+
+- name: Create virtual environment for coordinator
+  ansible.builtin.command: uv venv --python python3 {{ coordinator_home }}/.venv
+  args:
+    creates: "{{ coordinator_home }}/.venv"
+
+- name: Check currently installed platform-coordinator version
+  ansible.builtin.command: "{{ platform_coordinator_venv }}/bin/python -c 'import platform_coordinator; print(platform_coordinator.__version__)'"
+  register: platform_coordinator_account_installed_version
+  changed_when: false
+  failed_when: false
+
+- name: Install or upgrade platform-coordinator wheel
+  ansible.builtin.command: uv pip install --upgrade {{ platform_coordinator_wheel_path }}
+  environment:
+    VIRTUAL_ENV: "{{ platform_coordinator_venv }}"
+  when: >
+    platform_coordinator_account_installed_version.rc != 0 or
+    platform_coordinator_account_installed_version.stdout != platform_coordinator_version
+  changed_when: true

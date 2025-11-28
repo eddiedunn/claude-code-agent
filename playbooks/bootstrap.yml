@@ -1,0 +1,21 @@
+---
+# Bootstrap playbook - Install and configure uv package manager
+# This playbook installs the uv binary package manager from Artifactory
+# on target systems, ensuring a consistent Python package management
+# environment across the platform.
+
+- name: Bootstrap uv package manager
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  vars:
+    uv_version: "0.5.11"
+
+  pre_tasks:
+    - name: Load platform dependency versions
+      ansible.builtin.include_vars:
+        file: ../playbooks/tasks/common/load_platform_versions.yml
+
+  roles:
+    - platform_uv_bootstrap

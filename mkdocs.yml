@@ -1,0 +1,84 @@
+site_name: Grind Loop Documentation
+site_description: Automated fix-verify loops powered by Claude AI agents
+site_url: https://github.com/eddiedunn/claude-code-agent
+repo_url: https://github.com/eddiedunn/claude-code-agent
+repo_name: eddiedunn/claude-code-agent
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Quick Start: getting-started/quickstart.md
+    - Installation: getting-started/installation.md
+  - User Guide:
+    - Using with Claude Code: guide/using-with-claude-code.md
+    - Features: guide/features.md
+    - Slash Commands: guide/slash-commands.md
+  - Architecture:
+    - Overview: architecture/overview.md
+  - SDK Reference:
+    - Overview: sdk/overview.md
+    - Python SDK: sdk/python-reference.md
+    - TypeScript SDK: sdk/typescript-reference.md
+    - Guides:
+      - Streaming Input: sdk/streaming-input.md
+      - Handling Permissions: sdk/handling-permissions.md
+      - Session Management: sdk/session-management.md
+      - Structured Outputs: sdk/structured-outputs.md
+      - Hosting the Agent SDK: sdk/hosting.md
+      - Modifying System Prompts: sdk/modifying-system-prompts.md
+      - MCP in the SDK: sdk/mcp.md
+      - Custom Tools: sdk/custom-tools.md
+      - Subagents in the SDK: sdk/subagents.md
+      - Slash Commands in the SDK: sdk/slash-commands.md
+      - Agent Skills in the SDK: sdk/agent-skills.md
+      - Tracking Costs and Usage: sdk/tracking-costs-and-usage.md
+      - Todo Lists: sdk/todo-lists.md
+      - Plugins in the SDK: sdk/plugins.md
+    - Claude Max Workaround: sdk/claude_max_workaround.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+plugins:
+  - search

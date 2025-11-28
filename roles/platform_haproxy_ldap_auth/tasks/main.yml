@@ -1,0 +1,22 @@
+---
+# Setup Python virtual environment for haproxy LDAP auth
+
+- name: Create virtual environment for LDAP auth
+  ansible.builtin.command: uv venv --python python3 {{ auth_ldap_home }}/.venv
+  args:
+    creates: "{{ auth_ldap_home }}/.venv"
+
+- name: Check currently installed auth-gateway version
+  ansible.builtin.command: "{{ auth_ldap_home }}/.venv/bin/python -c 'import auth_gateway; print(auth_gateway.__version__)'"
+  register: platform_haproxy_ldap_auth_installed_version
+  changed_when: false
+  failed_when: false
+
+- name: Install or upgrade auth-gateway wheel
+  ansible.builtin.command: uv pip install --upgrade {{ auth_gateway_wheel_path }}
+  environment:
+    VIRTUAL_ENV: "{{ auth_ldap_home }}/.venv"
+  when: >
+    platform_haproxy_ldap_auth_installed_version.rc != 0 or
+    platform_haproxy_ldap_auth_installed_version.stdout != auth_gateway_version
+  changed_when: true

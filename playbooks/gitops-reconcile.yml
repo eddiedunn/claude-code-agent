@@ -1,0 +1,41 @@
+---
+# GitOps Reconciliation playbook
+# This playbook reconciles platform components by installing and configuring
+# the platform-coordinator and auth-gateway services, ensuring GitOps-driven
+# deployment consistency across the platform.
+
+- name: Reconcile platform components via GitOps
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  vars:
+    platform_coordinator_version: "1.0.0"
+    platform_coordinator_wheel_path: "/opt/wheels/platform-coordinator-1.0.0-py3-none-any.whl"
+    platform_coordinator_venv: "{{ coordinator_home }}/.venv"
+    coordinator_home: "/opt/coordinator"
+
+    auth_gateway_version: "1.0.0"
+    auth_gateway_wheel_path: "/opt/wheels/auth-gateway-1.0.0-py3-none-any.whl"
+    auth_ldap_home: "/opt/auth-ldap"
+
+  pre_tasks:
+    - name: Load platform dependency versions
+      ansible.builtin.include_vars:
+        file: ../playbooks/tasks/common/load_platform_versions.yml
+
+    - name: Ensure coordinator home directory exists
+      ansible.builtin.file:
+        path: "{{ coordinator_home }}"
+        state: directory
+        mode: "0755"
+
+    - name: Ensure auth-ldap home directory exists
+      ansible.builtin.file:
+        path: "{{ auth_ldap_home }}"
+        state: directory
+        mode: "0755"
+
+  roles:
+    - platform_coordinator_account
+    - platform_haproxy_ldap_auth
