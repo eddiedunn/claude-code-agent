@@ -1,0 +1,21 @@
+# Example task list for grind batch mode
+# Run with: uv run grind batch examples/tasks.yaml
+
+tasks:
+  # Unit test fixes grouped by file
+  - task: "Fix failing tests in tests/test_auth.py - mock setup issues"
+    verify: "pytest tests/test_auth.py -v"
+    max_iterations: 5
+
+  - task: "Fix failing tests in tests/test_api.py - missing fixtures"
+    verify: "pytest tests/test_api.py -v"
+    max_iterations: 5
+
+  # Code quality fixes
+  - task: "Fix all ruff linting errors in src/auth/"
+    verify: "ruff check src/auth/"
+    max_iterations: 3
+
+  - task: "Fix mypy type errors in src/models.py"
+    verify: "mypy src/models.py --strict"
+    max_iterations: 5

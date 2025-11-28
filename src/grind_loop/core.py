@@ -65,7 +65,6 @@ Run this command to check success: `{verify_cmd}`
 - Don't make speculative changes - verify each step
 - If the same fix fails twice, try a different approach
 - Read error messages carefully - they often tell you exactly what's wrong
-- Check file paths and imports when you see "not found" errors
 
 Begin by running the verification command to see the current state.
 """
@@ -93,21 +92,12 @@ async def grind(
         verify_cmd: Command to run to verify success (exit 0 = success)
         max_iterations: Maximum number of fix-verify cycles
         cwd: Working directory for the agent
-        allowed_tools: List of tools the agent can use (defaults to common set)
+        allowed_tools: List of tools the agent can use
         verbose: Print full agent output
-        on_iteration: Callback called at start of each iteration(iteration_num, status)
+        on_iteration: Callback called at start of each iteration
 
     Returns:
         GrindResult with status, iteration count, and details
-
-    Example:
-        result = await grind(
-            task="Fix failing unit tests",
-            verify_cmd="pytest tests/ -v",
-            max_iterations=5
-        )
-        if result.status == GrindStatus.COMPLETE:
-            print("All tests passing!")
     """
     if allowed_tools is None:
         allowed_tools = ["Read", "Write", "Edit", "Bash", "Glob", "Grep"]

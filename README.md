@@ -1,261 +1,186 @@
 # Grind Loop
 
-Automated fix-verify loops using the Claude Agent SDK. Stop being a human message-passer between your terminal and Claude.
+Automated fix-verify loops using the Claude Agent SDK.
 
-## What This Does
+## The Problem
 
-Instead of this manual cycle:
+You spend hours doing this:
 ```
-You see failure -> You paste to Claude -> Claude suggests fix ->
-You apply fix -> You run tests -> You see failure -> repeat...
+See failure -> Paste to Claude -> Apply fix -> Run tests -> See failure -> repeat...
 ```
 
-You run this:
+## The Solution
+
 ```bash
-uv run grind --task "Fix failing unit tests" --verify "pytest tests/ -v"
+uv run grind run --task "Fix failing tests" --verify "pytest tests/ -v"
 ```
 
-And walk away. The agent runs verification, analyzes failures, makes fixes, re-runs verification, and repeats until success (or asks for help).
-
-## Prerequisites
-
-1. **Claude Code CLI** must be installed and authenticated:
-   ```bash
-   npm install -g @anthropic-ai/claude-code
-   claude  # Follow authentication prompts
-   ```
-
-2. **Python 3.11+** with uv:
-   ```bash
-   # Install uv if you don't have it
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
-
-3. **Anthropic API Key** (recommended) or Claude Max subscription:
-   ```bash
-   export ANTHROPIC_API_KEY="sk-ant-..."
-   ```
+Walk away. Come back to passing tests.
 
 ## Installation
 
 ```bash
-# Clone and install
-git clone <repo-url>
+# Clone the repo
 cd claude_code_agent
+
+# Install dependencies
 uv sync
+
+# Verify Claude Code CLI is installed
+claude --version
 ```
 
-## Usage
+## Three Ways to Grind
 
-### Basic Usage
+### 1. Single Task
+
+Fix one thing:
 
 ```bash
-# Fix failing tests
-uv run grind --task "Fix failing unit tests" --verify "pytest tests/ -v"
+uv run grind run --task "Fix failing unit tests" --verify "pytest tests/ -v"
 
 # Short form
-uv run grind -t "Fix the tests" -v "pytest"
+uv run grind -t "Fix tests" -v "pytest"
 ```
 
-### Common Use Cases
+### 2. Batch Mode
 
-#### Unit Tests (pytest)
+When you have a list of tasks:
+
 ```bash
-uv run grind \
-  --task "Fix all failing unit tests" \
-  --verify "pytest tests/ -v --tb=short" \
-  --max-iter 10
+# Create a tasks file (or use decompose to generate one)
+uv run grind batch tasks.yaml
 ```
 
-#### Unit Tests (Jest)
+tasks.yaml format:
+```yaml
+tasks:
+  - task: "Fix auth tests"
+    verify: "pytest tests/auth/ -v"
+    max_iterations: 5
+
+  - task: "Fix API tests"
+    verify: "pytest tests/api/ -v"
+    max_iterations: 5
+```
+
+### 3. Decompose Mode
+
+When you have a big problem and need Claude to break it down:
+
 ```bash
-uv run grind \
-  --task "Fix failing Jest tests" \
-  --verify "npm test" \
-  --max-iter 8
+# Analyze and create task list
+uv run grind decompose \
+  --problem "Fix all 47 failing tests" \
+  --verify "pytest tests/ -v" \
+  --output tasks.yaml
+
+# Then run the generated tasks
+uv run grind batch tasks.yaml
 ```
 
-#### SonarQube Issues
+## Real-World Examples
+
+### Fix All Failing Tests
+
 ```bash
-uv run grind \
-  --task "Fix SonarQube code smells in src/auth/" \
-  --verify "sonar-scanner && ./check-quality-gate.sh" \
-  --max-iter 8
+# Let Claude analyze and decompose
+uv run grind decompose \
+  -p "Fix all failing pytest tests" \
+  -v "pytest tests/ -v --tb=short" \
+  -o test-tasks.yaml
+
+# Review the generated tasks
+cat test-tasks.yaml
+
+# Run them
+uv run grind batch test-tasks.yaml
 ```
 
-#### Ansible Playbooks
+### Fix SonarQube Issues
+
 ```bash
-uv run grind \
-  --task "Fix the webserver playbook - it fails on nginx config" \
-  --verify "ansible-playbook playbooks/webserver.yml --check" \
-  --max-iter 6
+# Decompose by issue type/file
+uv run grind decompose \
+  -p "Fix all SonarQube code smells and bugs" \
+  -v "sonar-scanner && ./check-quality-gate.sh" \
+  -o sonar-tasks.yaml
+
+uv run grind batch sonar-tasks.yaml
 ```
 
-#### Jenkins Pipeline
+### Fix Linting Issues
+
 ```bash
-uv run grind \
-  --task "Fix the Jenkinsfile - deploy stage is failing" \
-  --verify "jenkins-cli build my-job -s -v" \
-  --max-iter 5
+# Usually a single grind is enough for linting
+uv run grind run \
+  -t "Fix all ruff linting errors" \
+  -v "ruff check src/"
 ```
 
-#### Type Checking
+### Fix Type Errors
+
 ```bash
-uv run grind \
-  --task "Fix all mypy type errors" \
-  --verify "mypy src/ --strict" \
-  --max-iter 10
+uv run grind run \
+  -t "Fix all mypy type errors" \
+  -v "mypy src/ --strict" \
+  -n 15  # May need more iterations for complex type fixes
 ```
 
-#### Linting
-```bash
-uv run grind \
-  --task "Fix all ruff linting errors" \
-  --verify "ruff check src/" \
-  --max-iter 5
-```
+## Options
 
-### Options
-
+### grind run
 | Option | Short | Default | Description |
 |--------|-------|---------|-------------|
-| `--task` | `-t` | required | What needs to be fixed |
-| `--verify` | `-v` | required | Command to verify success (exit 0 = pass) |
-| `--max-iter` | `-n` | 10 | Maximum fix-verify iterations |
-| `--cwd` | `-c` | `.` | Working directory |
-| `--verbose` | | false | Show full Claude output |
-| `--quiet` | `-q` | false | Minimal output |
+| --task | -t | required | What to fix |
+| --verify | -v | required | Command to verify (exit 0 = pass) |
+| --max-iter | -n | 10 | Max iterations |
+| --cwd | -c | . | Working directory |
+| --verbose | | false | Show full Claude output |
+| --quiet | -q | false | Minimal output |
 
-### Exit Codes
+### grind batch
+| Option | Description |
+|--------|-------------|
+| file | YAML/JSON file with task list |
+| --verbose | Show full output |
+| --stop-on-stuck | Stop if any task gets stuck |
+
+### grind decompose
+| Option | Short | Description |
+|--------|-------|-------------|
+| --problem | -p | Problem to analyze |
+| --verify | -v | Verification command |
+| --output | -o | Save tasks to file |
+| --cwd | -c | Working directory |
+| --verbose | | Show analysis |
+
+## Exit Codes
 
 | Code | Meaning |
 |------|---------|
-| 0 | Success - verification passed |
-| 1 | Error during execution |
-| 2 | Agent got stuck - needs human help |
+| 0 | Success |
+| 1 | Error |
+| 2 | Agent got stuck |
 | 3 | Max iterations reached |
 
-## How It Works
+## Tips
 
-1. **Initialize**: Agent receives task description and verification command
-2. **Verify**: Agent runs verification to see current failures
-3. **Analyze**: Agent reads error output and identifies issues
-4. **Fix**: Agent makes targeted code changes
-5. **Re-verify**: Agent runs verification again
-6. **Loop**: Repeat until verification passes or agent signals it's stuck
-
-The agent maintains full context of what it has tried, so it can adjust strategy if initial fixes don't work.
-
-### Signal Words
-
-The agent uses these signals to communicate status:
-- `GRIND_COMPLETE` - Verification passed, task done
-- `GRIND_STUCK: <reason>` - Agent needs human intervention
-- `GRIND_PROGRESS: <summary>` - Progress update (shown in verbose mode)
-
-## Programmatic Usage
-
-```python
-import asyncio
-from grind_loop import grind, GrindStatus
-
-async def main():
-    result = await grind(
-        task="Fix failing unit tests",
-        verify_cmd="pytest tests/ -v",
-        max_iterations=5,
-        verbose=True
-    )
-
-    if result.status == GrindStatus.COMPLETE:
-        print(f"Fixed in {result.iterations} iterations!")
-    elif result.status == GrindStatus.STUCK:
-        print(f"Agent stuck: {result.message}")
-    else:
-        print(f"Incomplete: {result.status}")
-
-asyncio.run(main())
-```
-
-## Tips for Best Results
-
-### Write Good Task Descriptions
-```bash
-# Good - specific and actionable
---task "Fix the authentication tests - they're failing because the mock isn't set up correctly"
-
-# Less good - vague
---task "Fix tests"
-```
-
-### Write Good Verification Commands
-```bash
-# Good - clear pass/fail, useful output
---verify "pytest tests/auth/ -v --tb=short"
-
-# Less good - no useful output on failure
---verify "pytest -q"
-```
-
-### Start with Lower Iterations
-```bash
-# Start conservative while learning what works
---max-iter 5
-
-# Increase once you trust the workflow
---max-iter 15
-```
-
-### Use --verbose While Learning
-```bash
-# See what the agent is doing
-uv run grind -t "Fix tests" -v "pytest" --verbose
-```
+1. **Start with decompose** for large problems - let Claude figure out the chunks
+2. **Review generated tasks** before running batch - you can edit the YAML
+3. **Use --verbose** while learning to see what Claude is doing
+4. **Lower max_iterations** for quick tasks, higher for complex ones
+5. **Good verification commands** give useful error output
 
 ## Project Structure
 
 ```
-claude_code_agent/
-  src/
-    grind_loop/
-      __init__.py      # Package exports
-      core.py          # Main grind() function
-      cli.py           # Command-line interface
-  docs/
-    sdk_reference/     # Claude Agent SDK documentation
-  tests/               # Test files (TODO)
-  pyproject.toml       # Project configuration
-  README.md            # This file
+src/grind_loop/
+  __init__.py    # Package exports
+  core.py        # Single task grind loop
+  batch.py       # Batch processing
+  decompose.py   # Task decomposition
+  cli.py         # Command-line interface
+examples/
+  tasks.yaml     # Example task file
 ```
-
-## Troubleshooting
-
-### "Claude Code not found"
-Install and authenticate the CLI:
-```bash
-npm install -g @anthropic-ai/claude-code
-claude
-```
-
-### "Authentication failed"
-Set your API key:
-```bash
-export ANTHROPIC_API_KEY="sk-ant-..."
-```
-
-### Agent keeps trying the same fix
-The agent should detect repeated failures and try different approaches. If it doesn't:
-1. Make your task description more specific
-2. Reduce `--max-iter` to fail faster
-3. Check if the verification command gives useful error messages
-
-### Agent modifies wrong files
-Be specific in your task:
-```bash
-# Better
---task "Fix tests in tests/auth/ - don't modify src/ files"
-```
-
-## License
-
-MIT
