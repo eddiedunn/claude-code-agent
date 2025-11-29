@@ -1,4 +1,5 @@
 import argparse
+import subprocess
 import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
@@ -7,7 +8,16 @@ import pytest
 import yaml
 
 from grind.cli import main_async
-from grind.models import BatchResult, GrindResult, GrindStatus, InteractiveConfig, TaskDefinition
+from grind.models import BatchResult, GrindResult, GrindStatus, TaskDefinition
+
+
+def run_grind(*args) -> subprocess.CompletedProcess:
+    """Run grind CLI and return result."""
+    return subprocess.run(
+        ["uv", "run", "grind"] + list(args),
+        capture_output=True,
+        text=True,
+    )
 
 
 @pytest.mark.asyncio
@@ -184,8 +194,14 @@ async def test_decompose_command_writes_output_file():
         with patch('grind.cli.decompose', new_callable=AsyncMock) as mock_decompose:
             # Mock decompose to return list of TaskDefinitions
             mock_decompose.return_value = [
-                TaskDefinition(task="Fix test 1", verify="pytest test1.py", max_iterations=5, model="sonnet"),
-                TaskDefinition(task="Fix test 2", verify="pytest test2.py", max_iterations=5, model="sonnet"),
+                TaskDefinition(
+                    task="Fix test 1", verify="pytest test1.py",
+                    max_iterations=5, model="sonnet"
+                ),
+                TaskDefinition(
+                    task="Fix test 2", verify="pytest test2.py",
+                    max_iterations=5, model="sonnet"
+                ),
             ]
 
             exit_code = await main_async(args)
@@ -204,3 +220,62 @@ async def test_decompose_command_writes_output_file():
 
             # Verify exit code is 0
             assert exit_code == 0
+
+
+class TestDagCommand:
+    def test_dag_help(self):
+        """dag --help shows usage information."""
+        result = run_grind("dag", "--help")
+
+        assert result.returncode == 0
+        assert "dependency" in result.stdout.lower() or "dag" in result.stdout.lower()
+        assert "--dry-run" in result.stdout
+
+    def test_dag_dry_run(self, tmp_path):
+        """dag --dry-run shows execution plan without running."""
+        yaml_content = """
+tasks:
+  - id: first
+    task: "First task"
+    verify: "echo 1"
+  - id: second
+    task: "Second task"
+    verify: "echo 2"
+    depends_on: [first]
+"""
+        tasks_file = tmp_path / "tasks.yaml"
+        tasks_file.write_text(yaml_content)
+
+        result = run_grind("dag", str(tasks_file), "--dry-run")
+
+        assert result.returncode == 0
+        assert "first" in result.stdout
+        assert "second" in result.stdout
+        assert "after: first" in result.stdout
+
+    def test_dag_invalid_cycle(self, tmp_path):
+        """dag with cycle returns error exit code."""
+        yaml_content = """
+tasks:
+  - id: a
+    task: "A"
+    verify: "echo a"
+    depends_on: [b]
+  - id: b
+    task: "B"
+    verify: "echo b"
+    depends_on: [a]
+"""
+        tasks_file = tmp_path / "tasks.yaml"
+        tasks_file.write_text(yaml_content)
+
+        result = run_grind("dag", str(tasks_file))
+
+        assert result.returncode == 2  # Invalid graph exit code
+        assert "cycle" in result.stdout.lower() or "cycle" in result.stderr.lower()
+
+    def test_dag_missing_file(self):
+        """dag with nonexistent file returns error."""
+        result = run_grind("dag", "nonexistent.yaml")
+
+        assert result.returncode != 0

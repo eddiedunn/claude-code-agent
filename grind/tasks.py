@@ -4,7 +4,14 @@ from typing import Any
 
 import yaml
 
-from grind.models import GrindHooks, PromptConfig, TaskDefinition
+from grind.models import (
+    GrindHooks,
+    PromptConfig,
+    TaskDefinition,
+    TaskGraph,
+    TaskNode,
+    WorktreeConfig,
+)
 
 # Default limits for task execution
 DEFAULT_MAX_ITERATIONS = 10
@@ -74,3 +81,91 @@ def load_tasks(path: str, base_cwd: str | None = None) -> list[TaskDefinition]:
         tasks.append(task_def)
 
     return tasks
+
+
+def build_task_graph(path: str, base_cwd: str | None = None) -> TaskGraph:
+    """Load tasks from YAML/JSON and build a TaskGraph with dependencies.
+
+    This function extends load_tasks() to support task dependencies via
+    the 'id' and 'depends_on' fields in the task file.
+
+    Args:
+        path: Path to the tasks file (YAML or JSON)
+        base_cwd: Base working directory (defaults to tasks file's parent)
+
+    Returns:
+        TaskGraph with all tasks and their dependencies
+
+    Raises:
+        ValueError: If graph validation fails (cycles, missing deps)
+
+    Example YAML:
+        tasks:
+          - id: lint
+            task: "Fix linting"
+            verify: "ruff check ."
+          - id: test
+            task: "Fix tests"
+            verify: "pytest"
+            depends_on: [lint]
+
+    See docs/dag-execution-design.md for full format documentation.
+    """
+    p = Path(path).resolve()
+    content = p.read_text()
+    data = (
+        yaml.safe_load(content)
+        if p.suffix in (".yaml", ".yml")
+        else json.loads(content)
+    )
+
+    if base_cwd is None:
+        base_cwd = str(p.parent)
+
+    nodes: dict[str, TaskNode] = {}
+
+    for i, t in enumerate(data.get("tasks", []), 1):
+        # Get or generate task ID
+        task_id = t.get("id") or f"task_{i}"
+
+        # Parse the task definition using existing function
+        task_def = parse_task_from_yaml(t)
+        if task_def.cwd is None:
+            task_def.cwd = base_cwd
+
+        # Get dependencies
+        depends_on = t.get("depends_on", [])
+
+        # Parse worktree config (supports two formats)
+        worktree_config = None
+        worktree_data = t.get("worktree", {})
+
+        # Shorthand: branch at top level, or full worktree block
+        branch = t.get("branch") or worktree_data.get("branch")
+
+        if branch:
+            worktree_config = WorktreeConfig(
+                branch=branch,
+                base_branch=worktree_data.get("base_branch", "HEAD"),
+                merge_from=t.get("merge_from", worktree_data.get("merge_from", [])),
+                cleanup_on_success=worktree_data.get("cleanup_on_success", True),
+                cleanup_on_failure=worktree_data.get("cleanup_on_failure", False),
+            )
+
+        # Create node
+        node = TaskNode(
+            id=task_id,
+            task_def=task_def,
+            depends_on=depends_on,
+            worktree=worktree_config,
+        )
+        nodes[task_id] = node
+
+    graph = TaskGraph(nodes=nodes)
+
+    # Validate the graph
+    errors = graph.validate()
+    if errors:
+        raise ValueError(f"Invalid task graph: {'; '.join(errors)}")
+
+    return graph

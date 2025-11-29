@@ -103,6 +103,95 @@ async def main_async(args: argparse.Namespace) -> int:
             print(Color.info(f"Run: uv run grind.py batch {args.output}"))
         return 0
 
+    elif args.command == "dag":
+        from grind.dag import DAGExecutor
+        from grind.tasks import build_task_graph
+        from grind.worktree import WorktreeManager
+
+        try:
+            graph = build_task_graph(args.tasks_file)
+        except ValueError as e:
+            print(Color.error(f"Invalid task graph: {e}"))
+            return 2  # Exit code for invalid graph
+
+        # Optional cleanup
+        if args.cleanup_worktrees:
+            try:
+                manager = WorktreeManager()
+                count = await manager.cleanup_all(force=True)
+                if count:
+                    print(Color.info(f"Cleaned up {count} stale worktrees"))
+            except Exception as e:
+                print(Color.warning(f"Could not cleanup worktrees: {e}"))
+
+        # Warn about parallel without worktrees
+        if args.parallel > 1 and not args.worktrees:
+            print(Color.warning(
+                "Warning: --parallel > 1 without --worktrees may cause Git conflicts"
+            ))
+            print(Color.warning(
+                "Consider: grind dag tasks.yaml --parallel 3 --worktrees"
+            ))
+
+        if args.dry_run:
+            order = graph.get_execution_order()
+            print(Color.header("=" * 60))
+            print(Color.bold("DAG Execution Plan"))
+            print(Color.header("=" * 60))
+            for i, task_id in enumerate(order, 1):
+                node = graph.nodes[task_id]
+                deps = node.depends_on
+                dep_str = f" (after: {', '.join(deps)})" if deps else ""
+                task_preview = node.task_def.task[:50]
+                if len(node.task_def.task) > 50:
+                    task_preview += "..."
+                print(f"  {i}. {task_id}{dep_str}")
+                print(Color.dim(f"     {task_preview}"))
+            print(Color.header("=" * 60))
+            print(f"Total: {len(order)} tasks")
+            return 0
+
+        def on_start(node):
+            print(Color.info(f"\n{'=' * 60}"))
+            print(Color.bold(f"Starting: {node.id}"))
+            print(Color.dim(f"Task: {node.task_def.task[:60]}..."))
+            print(Color.info(f"{'=' * 60}"))
+
+        def on_complete(node, result):
+            if result.status == GrindStatus.COMPLETE:
+                print(Color.success(
+                    f"Completed: {node.id} ({result.iterations} iterations)"
+                ))
+            elif node.status == "blocked":
+                print(Color.warning(f"Blocked: {node.id}"))
+            else:
+                print(Color.error(f"Failed: {node.id} - {result.message}"))
+
+        executor = DAGExecutor(graph)
+        result = await executor.execute(
+            verbose=args.verbose,
+            max_parallel=args.parallel,
+            use_worktrees=args.worktrees,
+            on_task_start=on_start,
+            on_task_complete=on_complete,
+        )
+
+        # Print summary
+        print(Color.header("\n" + "=" * 60))
+        print(Color.bold("DAG Execution Summary"))
+        print(Color.header("=" * 60))
+        print(f"  Total:     {result.total}")
+        print(Color.success(f"  Completed: {result.completed}"))
+        if result.failed:
+            print(Color.error(f"  Failed:    {result.failed}"))
+        if result.blocked:
+            print(Color.warning(f"  Blocked:   {result.blocked}"))
+        print(f"  Duration:  {result.duration_seconds:.1f}s")
+        print(Color.header("=" * 60))
+
+        # Exit code: 0 if all passed, 1 if any failed/blocked
+        return 1 if (result.failed or result.blocked) else 0
+
     print(Color.error("Usage: grind.py [run|batch|decompose] [options]"))
     print(Color.dim("  grind.py run -t 'Fix tests' -v 'pytest' -m sonnet"))
     print(Color.dim("  grind.py batch tasks.yaml"))
@@ -139,6 +228,33 @@ def main():
     dec.add_argument("--output", "-o")
     dec.add_argument("--cwd", "-c", default=".")
     dec.add_argument("--verbose", action="store_true")
+
+    # DAG execution with dependencies
+    dag_parser = sub.add_parser(
+        "dag",
+        help="Run tasks with dependency ordering"
+    )
+    dag_parser.add_argument("tasks_file", help="Path to tasks YAML/JSON file")
+    dag_parser.add_argument(
+        "-v", "--verbose", action="store_true",
+        help="Show detailed output"
+    )
+    dag_parser.add_argument(
+        "--dry-run", action="store_true",
+        help="Show execution plan without running tasks"
+    )
+    dag_parser.add_argument(
+        "--parallel", "-p", type=int, default=1, metavar="N",
+        help="Max parallel tasks (default: 1 = sequential)"
+    )
+    dag_parser.add_argument(
+        "--worktrees", "-w", action="store_true",
+        help="Use git worktrees for isolation (recommended with --parallel)"
+    )
+    dag_parser.add_argument(
+        "--cleanup-worktrees", action="store_true",
+        help="Remove all .worktrees/ before starting"
+    )
 
     p.add_argument("--task", "-t")
     p.add_argument("--verify", "-v")

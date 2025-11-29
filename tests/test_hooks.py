@@ -1,10 +1,8 @@
 """Tests for grind/hooks.py hook execution functions."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from grind.hooks import execute_slash_command, execute_hooks
-from grind.models import SlashCommandHook, HookTrigger
+import pytest
 
 # Import real SDK classes for spec
 from claude_agent_sdk import (
@@ -12,6 +10,9 @@ from claude_agent_sdk import (
     ResultMessage,
     TextBlock,
 )
+
+from grind.hooks import execute_hooks, execute_slash_command
+from grind.models import HookTrigger, SlashCommandHook
 
 
 def create_mock_text_block(text: str) -> MagicMock:
@@ -97,8 +98,12 @@ async def test_execute_hooks_filters_by_should_run():
     # Create hooks with different triggers
     hook_once = SlashCommandHook(command="/once", trigger=HookTrigger.ONCE)
     hook_every = SlashCommandHook(command="/every", trigger=HookTrigger.EVERY)
-    hook_every_5 = SlashCommandHook(command="/every_5", trigger=HookTrigger.EVERY_N, trigger_count=5)
-    hook_every_3 = SlashCommandHook(command="/every_3", trigger=HookTrigger.EVERY_N, trigger_count=3)
+    hook_every_5 = SlashCommandHook(
+        command="/every_5", trigger=HookTrigger.EVERY_N, trigger_count=5
+    )
+    hook_every_3 = SlashCommandHook(
+        command="/every_3", trigger=HookTrigger.EVERY_N, trigger_count=3
+    )
 
     hooks = [hook_once, hook_every, hook_every_5, hook_every_3]
 

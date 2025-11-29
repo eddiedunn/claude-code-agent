@@ -1,10 +1,7 @@
 """Tests for grind.utils module."""
 
-import pytest
-from io import StringIO
-import sys
-from grind.utils import Color, print_result, print_batch_summary
-from grind.models import GrindResult, GrindStatus, BatchResult
+from grind.models import BatchResult, GrindResult, GrindStatus
+from grind.utils import Color, print_batch_summary, print_result
 
 
 class TestColor:

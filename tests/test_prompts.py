@@ -1,8 +1,7 @@
 """Tests for grind.prompts module."""
 
-import pytest
-from grind.prompts import GRIND_PROMPT, CONTINUE_PROMPT, DECOMPOSE_PROMPT, build_prompt
 from grind.models import PromptConfig
+from grind.prompts import CONTINUE_PROMPT, DECOMPOSE_PROMPT, GRIND_PROMPT, build_prompt
 
 
 class TestPromptConstants:

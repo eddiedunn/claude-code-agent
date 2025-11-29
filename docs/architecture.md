@@ -51,3 +51,65 @@ stateDiagram-v2
 | Stuck | Agent reports inability to proceed | Cleanup |
 | MaxIterations | Iteration limit reached | Cleanup |
 | Error | Exception occurred | Cleanup |
+
+## DAG Execution
+
+Tasks can declare dependencies on other tasks using the `depends_on` field.
+The DAGExecutor runs tasks in topological order, ensuring dependencies
+complete before dependents start.
+
+For full documentation, see [DAG Execution Design](dag-execution-design.md).
+
+### DAG State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pending: task_created
+
+    Pending --> Ready: dependencies_satisfied
+    Pending --> Blocked: dependency_failed
+
+    Ready --> Running: executor_picks_up
+
+    Running --> Completed: GRIND_COMPLETE
+    Running --> Failed: GRIND_STUCK/ERROR
+
+    Blocked --> [*]: skip
+    Completed --> [*]
+    Failed --> [*]
+
+    note right of Blocked: Task skipped because\\nan upstream dependency failed
+    note right of Ready: All dependencies in\\nCompleted state
+```
+
+### Parallel Execution with Worktrees
+
+When running tasks in parallel (`--parallel N`), use Git worktrees
+(`--worktrees`) to isolate each task in its own working directory:
+
+```bash
+uv run grind dag tasks.yaml --parallel 3 --worktrees
+```
+
+Each task with a `branch` config gets:
+1. A worktree at `.worktrees/{task_id}`
+2. A new branch created from `base_branch`
+3. Optional merges from `merge_from` branches
+4. Automatic cleanup on success
+
+### Extended YAML Format
+
+```yaml
+tasks:
+  - id: lint
+    task: "Fix linting"
+    verify: "ruff check ."
+    branch: fix/lint
+
+  - id: tests
+    task: "Fix tests"
+    verify: "pytest"
+    depends_on: [lint]
+    branch: fix/tests
+    merge_from: [fix/lint]
+```

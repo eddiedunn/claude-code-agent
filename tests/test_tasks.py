@@ -1,10 +1,11 @@
 """Tests for grind.tasks module."""
 
 import json
+
 import pytest
-from pathlib import Path
-from grind.tasks import parse_task_from_yaml, load_tasks
+
 from grind.models import TaskDefinition
+from grind.tasks import build_task_graph, load_tasks, parse_task_from_yaml
 
 
 class TestParseTaskFromYaml:
@@ -173,3 +174,168 @@ tasks:
         tasks = load_tasks(str(task_file))
 
         assert len(tasks) == 0
+
+
+def write_yaml(tmp_path, content: str) -> str:
+    """Write YAML content to a temp file and return path."""
+    f = tmp_path / "tasks.yaml"
+    f.write_text(content)
+    return str(f)
+
+
+class TestBuildTaskGraph:
+    def test_build_task_graph_simple(self, tmp_path):
+        """Tasks without IDs get auto-generated IDs."""
+        yaml_content = """
+tasks:
+  - task: "Task A"
+    verify: "echo a"
+  - task: "Task B"
+    verify: "echo b"
+"""
+        path = write_yaml(tmp_path, yaml_content)
+
+        graph = build_task_graph(path)
+
+        assert len(graph.nodes) == 2
+        assert "task_1" in graph.nodes
+        assert "task_2" in graph.nodes
+
+    def test_build_task_graph_with_explicit_ids(self, tmp_path):
+        """Tasks with explicit IDs use those IDs."""
+        yaml_content = """
+tasks:
+  - id: lint
+    task: "Fix lint"
+    verify: "ruff check ."
+  - id: test
+    task: "Fix tests"
+    verify: "pytest"
+    depends_on: [lint]
+"""
+        path = write_yaml(tmp_path, yaml_content)
+
+        graph = build_task_graph(path)
+
+        assert "lint" in graph.nodes
+        assert "test" in graph.nodes
+        assert graph.nodes["test"].depends_on == ["lint"]
+
+    def test_build_task_graph_validates_cycle(self, tmp_path):
+        """Should raise ValueError on cycle detection."""
+        yaml_content = """
+tasks:
+  - id: a
+    task: "A"
+    verify: "echo a"
+    depends_on: [b]
+  - id: b
+    task: "B"
+    verify: "echo b"
+    depends_on: [a]
+"""
+        path = write_yaml(tmp_path, yaml_content)
+
+        with pytest.raises(ValueError, match="[Cc]ycle"):
+            build_task_graph(path)
+
+    def test_build_task_graph_validates_missing_dep(self, tmp_path):
+        """Should raise ValueError on missing dependency."""
+        yaml_content = """
+tasks:
+  - id: a
+    task: "A"
+    verify: "echo a"
+    depends_on: [nonexistent]
+"""
+        path = write_yaml(tmp_path, yaml_content)
+
+        with pytest.raises(ValueError, match="non-existent|nonexistent"):
+            build_task_graph(path)
+
+    def test_build_task_graph_sets_cwd(self, tmp_path):
+        """Tasks should get cwd set to file's parent directory."""
+        yaml_content = """
+tasks:
+  - task: "A"
+    verify: "echo a"
+"""
+        path = write_yaml(tmp_path, yaml_content)
+
+        graph = build_task_graph(path)
+
+        assert graph.nodes["task_1"].task_def.cwd == str(tmp_path)
+
+    def test_build_task_graph_branch_shorthand(self, tmp_path):
+        """Shorthand branch syntax creates WorktreeConfig."""
+        yaml_content = """
+tasks:
+  - id: lint
+    task: "Fix lint"
+    verify: "ruff check ."
+    branch: fix/lint
+"""
+        path = write_yaml(tmp_path, yaml_content)
+
+        graph = build_task_graph(path)
+
+        node = graph.nodes["lint"]
+        assert node.worktree is not None
+        assert node.worktree.branch == "fix/lint"
+        assert node.worktree.base_branch == "HEAD"  # Default
+
+    def test_build_task_graph_full_worktree_config(self, tmp_path):
+        """Full worktree config parses all fields."""
+        yaml_content = """
+tasks:
+  - id: test
+    task: "Fix tests"
+    verify: "pytest"
+    worktree:
+      branch: fix/tests
+      base_branch: main
+      merge_from: [fix/lint]
+      cleanup_on_success: false
+      cleanup_on_failure: true
+"""
+        path = write_yaml(tmp_path, yaml_content)
+
+        graph = build_task_graph(path)
+
+        node = graph.nodes["test"]
+        assert node.worktree is not None
+        assert node.worktree.branch == "fix/tests"
+        assert node.worktree.base_branch == "main"
+        assert node.worktree.merge_from == ["fix/lint"]
+        assert node.worktree.cleanup_on_success is False
+        assert node.worktree.cleanup_on_failure is True
+
+    def test_build_task_graph_merge_from_shorthand(self, tmp_path):
+        """merge_from can be at task level."""
+        yaml_content = """
+tasks:
+  - id: b
+    task: "B"
+    verify: "echo b"
+    branch: fix/b
+    merge_from: [fix/a]
+"""
+        path = write_yaml(tmp_path, yaml_content)
+
+        graph = build_task_graph(path)
+
+        assert graph.nodes["b"].worktree.merge_from == ["fix/a"]
+
+    def test_build_task_graph_no_worktree(self, tmp_path):
+        """Tasks without branch/worktree have None worktree."""
+        yaml_content = """
+tasks:
+  - id: simple
+    task: "Simple task"
+    verify: "echo ok"
+"""
+        path = write_yaml(tmp_path, yaml_content)
+
+        graph = build_task_graph(path)
+
+        assert graph.nodes["simple"].worktree is None

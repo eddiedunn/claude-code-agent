@@ -1,10 +1,11 @@
 """Tests for grind/batch.py run_batch() function."""
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import patch, AsyncMock
 
 from grind.batch import run_batch
-from grind.models import TaskDefinition, GrindResult, GrindStatus
+from grind.models import GrindResult, GrindStatus, TaskDefinition
 
 
 @pytest.mark.asyncio

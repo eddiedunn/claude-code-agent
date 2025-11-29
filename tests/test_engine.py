@@ -1,11 +1,8 @@
 """Tests for grind/engine.py grind() function."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from grind.engine import grind
-from grind.models import GrindResult, GrindStatus, TaskDefinition, GrindHooks
-
+import pytest
 
 # Import real SDK classes for spec
 from claude_agent_sdk import (
@@ -14,6 +11,9 @@ from claude_agent_sdk import (
     TextBlock,
     ToolUseBlock,
 )
+
+from grind.engine import grind
+from grind.models import GrindHooks, GrindStatus, TaskDefinition
 
 
 @pytest.fixture
@@ -34,7 +34,9 @@ def create_mock_text_block(text: str) -> MagicMock:
     return block
 
 
-def create_mock_tool_block(name: str, tool_id: str = "tool_1", tool_input: dict = None) -> MagicMock:
+def create_mock_tool_block(
+    name: str, tool_id: str = "tool_1", tool_input: dict = None
+) -> MagicMock:
     """Create a mock ToolUseBlock with correct type for isinstance checks."""
     block = MagicMock(spec=ToolUseBlock)
     block.name = name

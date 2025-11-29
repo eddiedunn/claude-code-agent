@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Literal
+from typing import Any, Literal
 
 
 class HookTrigger(Enum):
@@ -142,3 +142,145 @@ class BatchResult:
     failed: int
     results: list[tuple[str, GrindResult]]
     duration_seconds: float
+
+
+@dataclass
+class WorktreeConfig:
+    """Configuration for Git worktree isolation.
+
+    See docs/dag-execution-design.md for usage details.
+    """
+    branch: str  # Branch name for this task (e.g., "fix/lint")
+    base_branch: str = "HEAD"  # Create branch from this ref
+    merge_from: list[str] = field(default_factory=list)  # Branches to merge
+    cleanup_on_success: bool = True  # Remove worktree after success
+    cleanup_on_failure: bool = False  # Keep worktree on failure for debugging
+
+
+@dataclass
+class TaskNode:
+    """A task with dependency and orchestration metadata.
+
+    Used by TaskGraph to track task dependencies and execution state.
+    See docs/dag-execution-design.md for architecture details.
+    """
+    id: str
+    task_def: TaskDefinition
+    depends_on: list[str] = field(default_factory=list)
+    outputs: dict[str, Any] = field(default_factory=dict)
+    status: str = "pending"  # pending|ready|running|completed|failed|blocked
+    worktree: "WorktreeConfig | None" = None     # Optional worktree isolation config
+
+
+@dataclass
+class TaskGraph:
+    """A directed acyclic graph of TaskNodes.
+
+    Provides methods for topological sorting and dependency validation.
+    See docs/dag-execution-design.md for algorithm details.
+    """
+    nodes: dict[str, TaskNode] = field(default_factory=dict)
+
+    def get_ready_tasks(self, completed: set[str]) -> list[TaskNode]:
+        """Return tasks whose dependencies are all satisfied.
+
+        A task is ready when:
+        - Its status is "pending"
+        - All tasks in its depends_on list are in the completed set
+        """
+        ready = []
+        for node in self.nodes.values():
+            if node.status == "pending":
+                if all(dep in completed for dep in node.depends_on):
+                    ready.append(node)
+        return ready
+
+    def get_execution_order(self) -> list[str]:
+        """Return topologically sorted task IDs using Kahn's algorithm.
+
+        Algorithm:
+        1. Calculate in-degree (number of dependencies) for each node
+        2. Start with nodes that have in-degree 0 (no dependencies)
+        3. Process each node, reducing in-degree of its dependents
+        4. Add nodes to result when their in-degree reaches 0
+        """
+        # Calculate in-degree for each node
+        in_degree = {nid: 0 for nid in self.nodes}
+        for node in self.nodes.values():
+            for dep in node.depends_on:
+                if dep in self.nodes:
+                    in_degree[node.id] += 1
+
+        # Start with nodes that have no dependencies
+        queue = [nid for nid, degree in in_degree.items() if degree == 0]
+        result = []
+
+        while queue:
+            nid = queue.pop(0)
+            result.append(nid)
+            # Reduce in-degree for nodes that depend on this one
+            for node in self.nodes.values():
+                if nid in node.depends_on:
+                    in_degree[node.id] -= 1
+                    if in_degree[node.id] == 0:
+                        queue.append(node.id)
+
+        return result
+
+    def validate(self) -> list[str]:
+        """Validate graph structure. Returns list of error messages.
+
+        Checks:
+        1. All dependencies reference existing tasks
+        2. No cycles exist in the dependency graph
+        """
+        errors = []
+
+        # Check for missing dependencies
+        for node in self.nodes.values():
+            for dep in node.depends_on:
+                if dep not in self.nodes:
+                    errors.append(
+                        f"Task '{node.id}' depends on non-existent task '{dep}'"
+                    )
+
+        # Check for cycles using DFS
+        visited: set[str] = set()
+        rec_stack: set[str] = set()
+
+        def has_cycle(nid: str) -> bool:
+            visited.add(nid)
+            rec_stack.add(nid)
+            node = self.nodes.get(nid)
+            if node:
+                for dep in node.depends_on:
+                    if dep not in visited:
+                        if has_cycle(dep):
+                            return True
+                    elif dep in rec_stack:
+                        return True
+            rec_stack.remove(nid)
+            return False
+
+        for nid in self.nodes:
+            if nid not in visited:
+                if has_cycle(nid):
+                    errors.append("Cycle detected in task dependencies")
+                    break
+
+        return errors
+
+
+@dataclass
+class DAGResult:
+    """Result of DAG execution.
+
+    Tracks completion status across all tasks in the graph.
+    """
+    total: int
+    completed: int
+    failed: int
+    blocked: int  # Tasks skipped due to failed dependencies
+    execution_order: list[str]
+    results: dict[str, GrindResult] = field(default_factory=dict)
+    duration_seconds: float = 0.0

@@ -1,15 +1,17 @@
 """Tests for grind.models module."""
 
-import pytest
 from grind.models import (
-    HookTrigger,
-    SlashCommandHook,
-    GrindHooks,
-    PromptConfig,
-    GrindStatus,
-    GrindResult,
-    TaskDefinition,
     BatchResult,
+    DAGResult,
+    GrindHooks,
+    GrindResult,
+    GrindStatus,
+    HookTrigger,
+    PromptConfig,
+    SlashCommandHook,
+    TaskDefinition,
+    TaskGraph,
+    TaskNode,
 )
 
 
@@ -215,3 +217,136 @@ class TestBatchResult:
         assert batch.failed == 0
         assert len(batch.results) == 2
         assert batch.duration_seconds == 25.0
+
+
+def make_task_def(task: str = "Test task", verify: str = "echo ok") -> TaskDefinition:
+    """Create a minimal TaskDefinition for testing."""
+    return TaskDefinition(task=task, verify=verify)
+
+
+class TestTaskNode:
+    def test_task_node_defaults(self):
+        """TaskNode should have sensible defaults."""
+        td = make_task_def()
+        node = TaskNode(id="test", task_def=td)
+
+        assert node.id == "test"
+        assert node.depends_on == []
+        assert node.outputs == {}
+        assert node.status == "pending"
+
+    def test_task_node_with_dependencies(self):
+        """TaskNode should store dependencies."""
+        td = make_task_def()
+        node = TaskNode(id="b", task_def=td, depends_on=["a", "c"])
+
+        assert node.depends_on == ["a", "c"]
+
+
+class TestTaskGraph:
+    def test_get_ready_tasks_initial(self):
+        """Only tasks with no dependencies should be ready initially."""
+        nodes = {
+            "A": TaskNode(id="A", task_def=make_task_def()),
+            "B": TaskNode(id="B", task_def=make_task_def(), depends_on=["A"]),
+            "C": TaskNode(id="C", task_def=make_task_def(), depends_on=["A"]),
+        }
+        graph = TaskGraph(nodes=nodes)
+
+        ready = graph.get_ready_tasks(completed=set())
+
+        assert len(ready) == 1
+        assert ready[0].id == "A"
+
+    def test_get_ready_tasks_after_completion(self):
+        """Tasks should become ready after dependencies complete."""
+        nodes = {
+            "A": TaskNode(id="A", task_def=make_task_def()),
+            "B": TaskNode(id="B", task_def=make_task_def(), depends_on=["A"]),
+            "C": TaskNode(id="C", task_def=make_task_def(), depends_on=["A"]),
+        }
+        graph = TaskGraph(nodes=nodes)
+        # Mark A as completed by changing its status
+        nodes["A"].status = "completed"
+
+        ready = graph.get_ready_tasks(completed={"A"})
+
+        assert len(ready) == 2
+        ready_ids = {n.id for n in ready}
+        assert ready_ids == {"B", "C"}
+
+    def test_get_execution_order_linear(self):
+        """Linear chain should execute in order."""
+        nodes = {
+            "A": TaskNode(id="A", task_def=make_task_def()),
+            "B": TaskNode(id="B", task_def=make_task_def(), depends_on=["A"]),
+            "C": TaskNode(id="C", task_def=make_task_def(), depends_on=["B"]),
+        }
+        graph = TaskGraph(nodes=nodes)
+
+        order = graph.get_execution_order()
+
+        assert order == ["A", "B", "C"]
+
+    def test_get_execution_order_diamond(self):
+        """Diamond pattern: A first, D last, B/C in middle."""
+        nodes = {
+            "A": TaskNode(id="A", task_def=make_task_def()),
+            "B": TaskNode(id="B", task_def=make_task_def(), depends_on=["A"]),
+            "C": TaskNode(id="C", task_def=make_task_def(), depends_on=["A"]),
+            "D": TaskNode(id="D", task_def=make_task_def(), depends_on=["B", "C"]),
+        }
+        graph = TaskGraph(nodes=nodes)
+
+        order = graph.get_execution_order()
+
+        assert order[0] == "A"  # A must be first
+        assert order[-1] == "D"  # D must be last
+        assert set(order[1:3]) == {"B", "C"}  # B and C in middle
+
+    def test_validate_detects_missing_dependency(self):
+        """Should detect references to non-existent tasks."""
+        nodes = {
+            "A": TaskNode(
+                id="A", task_def=make_task_def(), depends_on=["nonexistent"]
+            ),
+        }
+        graph = TaskGraph(nodes=nodes)
+
+        errors = graph.validate()
+
+        assert len(errors) == 1
+        assert "non-existent" in errors[0].lower() or "nonexistent" in errors[0]
+
+    def test_validate_detects_cycle(self):
+        """Should detect circular dependencies."""
+        nodes = {
+            "A": TaskNode(id="A", task_def=make_task_def(), depends_on=["C"]),
+            "B": TaskNode(id="B", task_def=make_task_def(), depends_on=["A"]),
+            "C": TaskNode(id="C", task_def=make_task_def(), depends_on=["B"]),
+        }
+        graph = TaskGraph(nodes=nodes)
+
+        errors = graph.validate()
+
+        assert len(errors) >= 1
+        assert any("cycle" in e.lower() for e in errors)
+
+
+class TestDAGResult:
+    def test_dag_result_creation(self):
+        """DAGResult should track all execution metrics."""
+        result = DAGResult(
+            total=5,
+            completed=3,
+            failed=1,
+            blocked=1,
+            execution_order=["A", "B", "C", "D", "E"],
+            duration_seconds=10.5,
+        )
+
+        assert result.total == 5
+        assert result.completed == 3
+        assert result.failed == 1
+        assert result.blocked == 1
+        assert result.duration_seconds == 10.5

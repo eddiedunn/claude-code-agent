@@ -1,8 +1,8 @@
 """Pytest configuration and fixtures."""
 
-import pytest
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 
 @pytest.fixture

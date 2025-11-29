@@ -51,13 +51,19 @@ class Color:
 
     @staticmethod
     def status_badge(status: GrindStatus) -> str:
-        badges = {
-            GrindStatus.COMPLETE: f"{Color.BG_GREEN}{Color.WHITE}{Color.BOLD} COMPLETE {Color.RESET}",
-            GrindStatus.STUCK: f"{Color.BG_YELLOW}{Color.WHITE}{Color.BOLD} STUCK {Color.RESET}",
-            GrindStatus.MAX_ITERATIONS: f"{Color.BG_YELLOW}{Color.WHITE}{Color.BOLD} MAX ITER {Color.RESET}",
-            GrindStatus.ERROR: f"{Color.BG_RED}{Color.WHITE}{Color.BOLD} ERROR {Color.RESET}",
+        bg = Color.BG_GREEN
+        if status in (GrindStatus.STUCK, GrindStatus.MAX_ITERATIONS):
+            bg = Color.BG_YELLOW
+        elif status == GrindStatus.ERROR:
+            bg = Color.BG_RED
+        labels = {
+            GrindStatus.COMPLETE: "COMPLETE",
+            GrindStatus.STUCK: "STUCK",
+            GrindStatus.MAX_ITERATIONS: "MAX ITER",
+            GrindStatus.ERROR: "ERROR",
         }
-        return badges.get(status, f" {status.value} ")
+        label = labels.get(status, status.value)
+        return f"{bg}{Color.WHITE}{Color.BOLD} {label} {Color.RESET}"
 
     @staticmethod
     def model_badge(model: str) -> str:
@@ -154,17 +160,17 @@ def print_batch_summary(r: BatchResult) -> None:
     print(Color.header("=" * 70))
 
     # Stats row with colored badges
-    complete_badge = f"{Color.BG_GREEN}{Color.WHITE}{Color.BOLD} {r.completed} COMPLETE {Color.RESET}"
-    stuck_badge = f"{Color.BG_YELLOW}{Color.WHITE}{Color.BOLD} {r.stuck} STUCK {Color.RESET}" if r.stuck else ""
-    failed_badge = f"{Color.BG_RED}{Color.WHITE}{Color.BOLD} {r.failed} FAILED {Color.RESET}" if r.failed else ""
+    def make_badge(bg: str, count: int, label: str) -> str:
+        return f"{bg}{Color.WHITE}{Color.BOLD} {count} {label} {Color.RESET}"
 
-    badges = [complete_badge]
-    if stuck_badge:
-        badges.append(stuck_badge)
-    if failed_badge:
-        badges.append(failed_badge)
+    badges = [make_badge(Color.BG_GREEN, r.completed, "COMPLETE")]
+    if r.stuck:
+        badges.append(make_badge(Color.BG_YELLOW, r.stuck, "STUCK"))
+    if r.failed:
+        badges.append(make_badge(Color.BG_RED, r.failed, "FAILED"))
 
-    print(f"  {' '.join(badges)}  {Color.dim(f'| {r.total} tasks | {format_duration(r.duration_seconds)}')}")
+    stats = f"| {r.total} tasks | {format_duration(r.duration_seconds)}"
+    print(f"  {' '.join(badges)}  {Color.dim(stats)}")
     print()
 
     # Task results table
