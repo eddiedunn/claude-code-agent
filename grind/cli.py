@@ -11,7 +11,7 @@ from grind.tasks import load_tasks
 from grind.utils import Color, print_batch_summary, print_result
 
 
-async def main_async(args):
+async def main_async(args: argparse.Namespace) -> int:
     if args.command == "run" or (args.command is None and args.task):
         print(Color.header("=" * 60))
         print(Color.header("GRIND LOOP"))
@@ -34,13 +34,19 @@ async def main_async(args):
             interactive=interactive_config,
         )
 
-        result = await grind(
-            task_def,
-            args.verbose,
-            (lambda n, s: print(f"\n[Iteration {n}]")) if not getattr(args, 'quiet', False) else None
+        iteration_callback = (
+            (lambda n, s: print(f"\n[Iteration {n}]"))
+            if not getattr(args, 'quiet', False)
+            else None
         )
+        result = await grind(task_def, args.verbose, iteration_callback)
         print_result(result)
-        return 0 if result.status == GrindStatus.COMPLETE else (2 if result.status == GrindStatus.STUCK else 1)
+        if result.status == GrindStatus.COMPLETE:
+            return 0
+        elif result.status == GrindStatus.STUCK:
+            return 2
+        else:
+            return 1
 
     elif args.command == "batch":
         # Determine working directory: explicit --cwd overrides, else infer from tasks file
@@ -80,7 +86,12 @@ async def main_async(args):
         )
         output = {
             "tasks": [
-                {"task": t.task, "verify": t.verify, "max_iterations": t.max_iterations, "model": t.model}
+                {
+                    "task": t.task,
+                    "verify": t.verify,
+                    "max_iterations": t.max_iterations,
+                    "model": t.model,
+                }
                 for t in tasks
             ]
         }

@@ -5,6 +5,12 @@ import platform
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Any
+
+# Truncation limits for log output
+INPUT_TRUNCATION_LIMIT = 5000
+RESULT_TRUNCATION_LIMIT = 10000
+MAX_QUERY_LOG_LINES = 50
 
 _logger: logging.Logger | None = None
 _log_file: Path | None = None
@@ -123,7 +129,9 @@ def log_iteration_start(iteration: int, max_iterations: int) -> None:
     logger.info("*" * 80)
 
 
-def log_iteration_end(iteration: int, tools_used: list[str], text_length: int, duration_ms: float) -> None:
+def log_iteration_end(
+    iteration: int, tools_used: list[str], text_length: int, duration_ms: float
+) -> None:
     """Log iteration end with summary."""
     logger = get_logger()
     logger.info("-" * 40)
@@ -134,7 +142,7 @@ def log_iteration_end(iteration: int, tools_used: list[str], text_length: int, d
     logger.info("-" * 40)
 
 
-def log_tool_use(tool_name: str, tool_id: str, tool_input: dict) -> None:
+def log_tool_use(tool_name: str, tool_id: str, tool_input: dict[str, Any]) -> None:
     """Log tool usage with full input details."""
     logger = get_logger()
     logger.info(f"TOOL CALL: {tool_name}")
@@ -143,10 +151,10 @@ def log_tool_use(tool_name: str, tool_id: str, tool_input: dict) -> None:
     # Log full input, handling large values
     try:
         input_str = json.dumps(tool_input, indent=2, default=str)
-        if len(input_str) > 5000:
+        if len(input_str) > INPUT_TRUNCATION_LIMIT:
             # For very large inputs, truncate but show structure
             logger.info(f"  Input (truncated, {len(input_str)} chars):")
-            for line in input_str[:5000].split("\n"):
+            for line in input_str[:INPUT_TRUNCATION_LIMIT].split("\n"):
                 logger.info(f"    {line}")
             logger.info("    ... (truncated)")
         else:
@@ -164,9 +172,9 @@ def log_tool_result(tool_name: str, tool_id: str, result: str, is_error: bool = 
     logger.info(f"TOOL RESULT [{status}]: {tool_name} ({tool_id})")
 
     # Log full result
-    if len(result) > 10000:
+    if len(result) > RESULT_TRUNCATION_LIMIT:
         logger.info(f"  Result (truncated, {len(result)} chars):")
-        for line in result[:10000].split("\n"):
+        for line in result[:RESULT_TRUNCATION_LIMIT].split("\n"):
             logger.debug(f"    {line}")
         logger.info("    ... (truncated)")
     else:
@@ -221,7 +229,9 @@ def log_continue_prompt(iteration: int) -> None:
     logger.info(f"SENDING CONTINUE PROMPT for iteration {iteration + 1}")
 
 
-def log_result(status: str, iterations: int, message: str, tools_used: list[str], duration: float) -> None:
+def log_result(
+    status: str, iterations: int, message: str, tools_used: list[str], duration: float
+) -> None:
     """Log final result with full details."""
     logger = get_logger()
     logger.info("")
@@ -274,13 +284,17 @@ def log_query_sent(query: str) -> None:
     """Log a query being sent to the SDK."""
     logger = get_logger()
     logger.debug(f"QUERY SENT ({len(query)} chars):")
-    for line in query.split("\n")[:50]:  # First 50 lines
+    for line in query.split("\n")[:MAX_QUERY_LOG_LINES]:
         logger.debug(f"  > {line}")
-    if query.count("\n") > 50:
-        logger.debug(f"  ... ({query.count(chr(10)) - 50} more lines)")
+    if query.count("\n") > MAX_QUERY_LOG_LINES:
+        logger.debug(
+            f"  ... ({query.count(chr(10)) - MAX_QUERY_LOG_LINES} more lines)"
+        )
 
 
-def log_session_end(total_tasks: int, completed: int, stuck: int, failed: int, duration: float) -> None:
+def log_session_end(
+    total_tasks: int, completed: int, stuck: int, failed: int, duration: float
+) -> None:
     """Log batch session summary."""
     logger = get_logger()
     logger.info("")

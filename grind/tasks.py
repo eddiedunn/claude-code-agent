@@ -1,12 +1,17 @@
 import json
 from pathlib import Path
+from typing import Any
 
 import yaml
 
 from grind.models import GrindHooks, PromptConfig, TaskDefinition
 
+# Default limits for task execution
+DEFAULT_MAX_ITERATIONS = 10
+DEFAULT_MAX_TURNS = 50
 
-def parse_task_from_yaml(yaml_data: dict) -> TaskDefinition:
+
+def parse_task_from_yaml(yaml_data: dict[str, Any]) -> TaskDefinition:
     hooks_data = yaml_data.get("hooks", {})
     hooks = GrindHooks(
         pre_grind=hooks_data.get("pre_grind", []),
@@ -23,18 +28,24 @@ def parse_task_from_yaml(yaml_data: dict) -> TaskDefinition:
         additional_context=prompt_data.get("additional_context"),
     )
 
-    return TaskDefinition(
+    task_def = TaskDefinition(
         task=yaml_data["task"],
         verify=yaml_data["verify"],
-        max_iterations=yaml_data.get("max_iterations", 10),
+        max_iterations=yaml_data.get("max_iterations", DEFAULT_MAX_ITERATIONS),
         cwd=yaml_data.get("cwd"),
         model=yaml_data.get("model", "sonnet"),
         hooks=hooks,
         prompt_config=prompt_config,
         allowed_tools=yaml_data.get("allowed_tools"),
         permission_mode=yaml_data.get("permission_mode", "acceptEdits"),
-        max_turns=yaml_data.get("max_turns", 50),
+        max_turns=yaml_data.get("max_turns", DEFAULT_MAX_TURNS),
     )
+
+    errors = task_def.validate()
+    if errors:
+        raise ValueError(f"Invalid task definition: {'; '.join(errors)}")
+
+    return task_def
 
 
 def load_tasks(path: str, base_cwd: str | None = None) -> list[TaskDefinition]:

@@ -5,6 +5,7 @@ Press 'i' during execution to trigger a checkpoint at the next iteration boundar
 """
 
 import atexit
+import logging
 import select
 import sys
 import termios
@@ -14,6 +15,28 @@ from dataclasses import dataclass, field
 
 from grind.models import CheckpointAction
 from grind.utils import Color
+
+# Get logger for this module
+logger = logging.getLogger(__name__)
+
+# Keyboard listener poll interval in seconds
+KEYBOARD_POLL_INTERVAL = 0.1
+
+
+def _safe_restore_terminal(fd: int, saved_attrs) -> None:
+    """Restore terminal attributes, ignoring errors if terminal is gone."""
+    try:
+        termios.tcsetattr(fd, termios.TCSADRAIN, saved_attrs)
+    except (OSError, termios.error):
+        pass  # Terminal may be detached; safe to ignore
+
+
+def _safe_set_cbreak(fd: int) -> None:
+    """Enable cbreak mode, ignoring errors."""
+    try:
+        tty.setcbreak(fd)
+    except (OSError, termios.error):
+        pass  # Terminal may be closed; safe to ignore
 
 
 @dataclass
@@ -53,25 +76,23 @@ def _keyboard_listener() -> None:
     try:
         while _interject_state.listener_active:
             # Check if input is available (non-blocking)
-            ready, _, _ = select.select([sys.stdin], [], [], 0.1)
+            ready, _, _ = select.select([sys.stdin], [], [], KEYBOARD_POLL_INTERVAL)
             if ready:
                 char = sys.stdin.read(1)
                 if char.lower() == "i":
                     _interject_state.request_interject()
                     msg = "\n[Interject requested - pausing after current iteration]"
                     print(Color.warning(msg))
-    except Exception:
-        pass  # Silently handle any terminal issues
+    except (OSError, ValueError) as e:
+        # Terminal may be detached, closed, or in unexpected state during shutdown
+        logger.debug(f"Keyboard listener stopped due to terminal error: {e}")
 
 
 def _restore_terminal() -> None:
     """Restore terminal settings on exit."""
     global _interject_state
     if _interject_state.original_settings and sys.stdin.isatty():
-        try:
-            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, _interject_state.original_settings)
-        except Exception:
-            pass
+        _safe_restore_terminal(sys.stdin, _interject_state.original_settings)
 
 
 def start_keyboard_listener() -> None:
@@ -97,8 +118,9 @@ def start_keyboard_listener() -> None:
 
         _listener_thread = threading.Thread(target=_keyboard_listener, daemon=True)
         _listener_thread.start()
-    except Exception:
-        # If we can't set up the listener, just continue without it
+    except (OSError, termios.error) as e:
+        # Failed to start keyboard listener; interactive mode unavailable
+        logger.debug(f"Could not start keyboard listener: {e}")
         _interject_state.listener_active = False
 
 
@@ -154,10 +176,7 @@ def get_checkpoint_input() -> tuple[CheckpointAction, str | None]:
     """
     # Temporarily restore normal terminal mode for input
     if _interject_state.original_settings and sys.stdin.isatty():
-        try:
-            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, _interject_state.original_settings)
-        except Exception:
-            pass
+        _safe_restore_terminal(sys.stdin, _interject_state.original_settings)
 
     try:
         user_input = input("> ").strip()
@@ -166,10 +185,7 @@ def get_checkpoint_input() -> tuple[CheckpointAction, str | None]:
     finally:
         # Restore cbreak mode for listener
         if sys.stdin.isatty() and _interject_state.listener_active:
-            try:
-                tty.setcbreak(sys.stdin.fileno())
-            except Exception:
-                pass
+            _safe_set_cbreak(sys.stdin.fileno())
 
     if not user_input:
         return CheckpointAction.CONTINUE, None
@@ -184,10 +200,7 @@ def get_checkpoint_input() -> tuple[CheckpointAction, str | None]:
     elif cmd == "g":
         # Temporarily restore normal mode for multi-line input
         if _interject_state.original_settings and sys.stdin.isatty():
-            try:
-                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, _interject_state.original_settings)
-            except Exception:
-                pass
+            _safe_restore_terminal(sys.stdin, _interject_state.original_settings)
         print(Color.info("Enter guidance (single line):"))
         try:
             guidance = input("> ").strip()
@@ -195,18 +208,12 @@ def get_checkpoint_input() -> tuple[CheckpointAction, str | None]:
             guidance = ""
         finally:
             if sys.stdin.isatty() and _interject_state.listener_active:
-                try:
-                    tty.setcbreak(sys.stdin.fileno())
-                except Exception:
-                    pass
+                _safe_set_cbreak(sys.stdin.fileno())
         return CheckpointAction.GUIDANCE, guidance if guidance else None
     elif cmd == "p":
         # Temporarily restore normal mode for multi-line input
         if _interject_state.original_settings and sys.stdin.isatty():
-            try:
-                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, _interject_state.original_settings)
-            except Exception:
-                pass
+            _safe_restore_terminal(sys.stdin, _interject_state.original_settings)
         print(Color.info("Enter persistent guidance (single line):"))
         try:
             guidance = input("> ").strip()
@@ -214,10 +221,7 @@ def get_checkpoint_input() -> tuple[CheckpointAction, str | None]:
             guidance = ""
         finally:
             if sys.stdin.isatty() and _interject_state.listener_active:
-                try:
-                    tty.setcbreak(sys.stdin.fileno())
-                except Exception:
-                    pass
+                _safe_set_cbreak(sys.stdin.fileno())
         return CheckpointAction.GUIDANCE_PERSIST, guidance if guidance else None
     else:
         # Treat any other input as one-shot guidance

@@ -1,4 +1,7 @@
+import asyncio
 import json
+import re
+import shlex
 import subprocess
 from datetime import datetime
 from typing import Callable
@@ -39,6 +42,15 @@ from grind.models import CheckpointAction, GrindResult, GrindStatus, TaskDefinit
 from grind.prompts import CONTINUE_PROMPT, DECOMPOSE_PROMPT, build_prompt
 from grind.utils import Color
 
+# Default set of tools available to the agent
+DEFAULT_ALLOWED_TOOLS = ["Read", "Write", "Edit", "Bash", "Glob", "Grep"]
+
+# Regex patterns for detecting completion signals
+# These patterns require the signal at line start (beginning of string or after newline)
+# to avoid false positives when the signal is mentioned in reasoning
+COMPLETE_PATTERN = re.compile(r'(?:^|\n)GRIND_COMPLETE(?::\s*(.*))?', re.MULTILINE)
+STUCK_PATTERN = re.compile(r'(?:^|\n)GRIND_STUCK(?::\s*(.*))?', re.MULTILINE)
+
 GUIDANCE_PROMPT = """The human operator observing this session has provided the following guidance:
 
 "{guidance}"
@@ -74,9 +86,15 @@ def _run_verify_command(verify_cmd: str, cwd: str | None) -> None:
     print(Color.bold(f"RUNNING: {verify_cmd}"))
     print(Color.header("=" * 60))
     try:
+        cmd_parts = shlex.split(verify_cmd)
+    except ValueError as e:
+        print(Color.error(f"Invalid command syntax: {e}"))
+        print(Color.header("=" * 60))
+        return
+    try:
         result = subprocess.run(
-            verify_cmd,
-            shell=True,
+            cmd_parts,
+            shell=False,
             cwd=cwd,
             capture_output=True,
             text=True,
@@ -117,7 +135,7 @@ async def grind(
         allowed_tools=(
             task_def.allowed_tools
             if task_def.allowed_tools
-            else ["Read", "Write", "Edit", "Bash", "Glob", "Grep"]
+            else DEFAULT_ALLOWED_TOOLS
         ),
         permission_mode=task_def.permission_mode,
         cwd=task_def.cwd,
@@ -172,7 +190,23 @@ async def grind(
                 )
                 all_hooks_executed.extend(hook_results)
 
-            await client.query(system_prompt)
+            # Send initial query with timeout protection
+            try:
+                async with asyncio.timeout(task_def.query_timeout):
+                    await client.query(system_prompt)
+            except asyncio.TimeoutError:
+                error_msg = f"SDK query timed out after {task_def.query_timeout} seconds"
+                _log(verbose, f">>> TIMEOUT: {error_msg}", "error")
+                log_error(error_msg)
+                return GrindResult(
+                    GrindStatus.ERROR,
+                    0,
+                    error_msg,
+                    list(set(all_tools)),
+                    (datetime.now() - start_time).total_seconds(),
+                    all_hooks_executed,
+                    task_def.model,
+                )
 
             iteration = 0
             while iteration < task_def.max_iterations:
@@ -193,100 +227,143 @@ async def grind(
                 had_error = False
 
                 iteration_start = datetime.now()
-                async for msg in client.receive_response():
-                    if isinstance(msg, AssistantMessage):
-                        for block in msg.content:
-                            if isinstance(block, TextBlock):
-                                log_text_block(block.text)
-                                if verbose:
-                                    print(Color.dim(block.text))
-                                collected += block.text
-                            elif isinstance(block, ToolUseBlock):
-                                log_tool_use(block.name, block.id, block.input)
-                                tools.append(block.name)
-                                if verbose:
-                                    print(Color.info(f"  -> {block.name}"))
-                    elif isinstance(msg, ResultMessage):
-                        all_tools.extend(tools)
-                        duration = (datetime.now() - start_time).total_seconds()
+                # Wrap receive_response in timeout (10 minutes per iteration)
+                try:
+                    async with asyncio.timeout(task_def.query_timeout * 2):
+                        async for msg in client.receive_response():
+                            if isinstance(msg, AssistantMessage):
+                                for block in msg.content:
+                                    if isinstance(block, TextBlock):
+                                        log_text_block(block.text)
+                                        if verbose:
+                                            print(Color.dim(block.text))
+                                        collected += block.text
+                                    elif isinstance(block, ToolUseBlock):
+                                        log_tool_use(block.name, block.id, block.input)
+                                        tools.append(block.name)
+                                        if verbose:
+                                            print(Color.info(f"  -> {block.name}"))
+                            elif isinstance(msg, ResultMessage):
+                                all_tools.extend(tools)
+                                duration = (datetime.now() - start_time).total_seconds()
 
-                        # Log what we collected for debugging
-                        _log(verbose, f"\n--- Iteration {iteration} complete ---", "header")
-                        _log(verbose, f"Tools used this iteration: {tools}", "dim")
-                        _log(verbose, f"Collected text length: {len(collected)} chars", "dim")
-
-                        # Log iteration end
-                        iteration_duration_ms = (datetime.now() - iteration_start).total_seconds() * 1000
-                        log_iteration_end(iteration, tools, len(collected), iteration_duration_ms)
-
-                        # Check for completion signal
-                        has_complete = "GRIND_COMPLETE" in collected
-                        has_stuck = "GRIND_STUCK" in collected
-                        log_completion_check(has_complete, has_stuck, len(collected), collected)
-                        _log(verbose, f"GRIND_COMPLETE found: {has_complete}", "info")
-                        _log(verbose, f"GRIND_STUCK found: {has_stuck}", "info")
-
-                        if has_complete:
-                            message = ""
-                            if "GRIND_COMPLETE:" in collected:
-                                message = (
-                                    collected.split("GRIND_COMPLETE:")[1]
-                                    .split("\n")[0]
-                                    .strip()
-                                )
-                            _log(verbose, f"Completion message: {message or '(none)'}", "success")
-
-                            if task_def.hooks.post_grind:
-                                if verbose:
-                                    print("\n" + Color.header("=" * 60))
-                                    print(Color.success("POST-GRIND HOOKS"))
-                                    print(Color.header("=" * 60))
-                                hook_results = await execute_hooks(
-                                    client,
-                                    task_def.hooks.post_grind,
-                                    iteration,
-                                    False,
+                                # Log what we collected for debugging
+                                _log(verbose, f"\n--- Iteration {iteration} complete ---", "header")
+                                _log(verbose, f"Tools used this iteration: {tools}", "dim")
+                                _log(
                                     verbose,
+                                    f"Collected text length: {len(collected)} chars",
+                                    "dim",
                                 )
-                                all_hooks_executed.extend(hook_results)
 
-                            _log(verbose, f">>> RETURNING COMPLETE after {iteration} iterations", "success")
-                            log_result("COMPLETE", iteration, message, list(set(all_tools)), duration)
-                            return GrindResult(
-                                GrindStatus.COMPLETE,
-                                iteration,
-                                message,
-                                list(set(all_tools)),
-                                duration,
-                                all_hooks_executed,
-                                task_def.model,
-                            )
-
-                        if has_stuck:
-                            reason = "Unknown"
-                            if "GRIND_STUCK:" in collected:
-                                reason = (
-                                    collected.split("GRIND_STUCK:")[1]
-                                    .split("\n")[0]
-                                    .strip()
+                                # Log iteration end
+                                iteration_duration = (
+                                    datetime.now() - iteration_start
+                                ).total_seconds()
+                                iteration_duration_ms = iteration_duration * 1000
+                                log_iteration_end(
+                                    iteration, tools, len(collected), iteration_duration_ms
                                 )
-                            had_error = True
-                            _log(verbose, f"Stuck reason: {reason}", "error")
-                            _log(verbose, f">>> RETURNING STUCK after {iteration} iterations", "error")
-                            log_result("STUCK", iteration, reason, list(set(all_tools)), duration)
 
-                            return GrindResult(
-                                GrindStatus.STUCK,
-                                iteration,
-                                reason,
-                                list(set(all_tools)),
-                                duration,
-                                all_hooks_executed,
-                                task_def.model,
-                            )
+                                # Check for completion signals using regex patterns
+                                complete_match = COMPLETE_PATTERN.search(collected)
+                                stuck_match = STUCK_PATTERN.search(collected)
+                                has_complete = complete_match is not None
+                                has_stuck = stuck_match is not None
+                                log_completion_check(
+                                    has_complete, has_stuck, len(collected), collected
+                                )
+                                _log(verbose, f"GRIND_COMPLETE found: {has_complete}", "info")
+                                _log(verbose, f"GRIND_STUCK found: {has_stuck}", "info")
 
-                        # Neither complete nor stuck - continuing
-                        _log(verbose, "No completion signal found, will continue...", "warning")
+                                if complete_match:
+                                    message = complete_match.group(1) or "Task completed"
+                                    message = message.split('\n')[0].strip()  # First line only
+                                    _log(
+                                        verbose,
+                                        f"Completion message: {message}",
+                                        "success",
+                                    )
+
+                                    if task_def.hooks.post_grind:
+                                        if verbose:
+                                            print("\n" + Color.header("=" * 60))
+                                            print(Color.success("POST-GRIND HOOKS"))
+                                            print(Color.header("=" * 60))
+                                        hook_results = await execute_hooks(
+                                            client,
+                                            task_def.hooks.post_grind,
+                                            iteration,
+                                            False,
+                                            verbose,
+                                        )
+                                        all_hooks_executed.extend(hook_results)
+
+                                    _log(
+                                        verbose,
+                                        f">>> RETURNING COMPLETE after {iteration} iterations",
+                                        "success",
+                                    )
+                                    log_result(
+                                        "COMPLETE",
+                                        iteration,
+                                        message,
+                                        list(set(all_tools)),
+                                        duration,
+                                    )
+                                    return GrindResult(
+                                        GrindStatus.COMPLETE,
+                                        iteration,
+                                        message,
+                                        list(set(all_tools)),
+                                        duration,
+                                        all_hooks_executed,
+                                        task_def.model,
+                                    )
+
+                                if stuck_match:
+                                    reason = stuck_match.group(1) or "Unknown reason"
+                                    reason = reason.split('\n')[0].strip()  # First line only
+                                    had_error = True
+                                    _log(verbose, f"Stuck reason: {reason}", "error")
+                                    _log(
+                                        verbose,
+                                        f">>> RETURNING STUCK after {iteration} iterations",
+                                        "error",
+                                    )
+                                    log_result(
+                                        "STUCK",
+                                        iteration,
+                                        reason,
+                                        list(set(all_tools)),
+                                        duration,
+                                    )
+
+                                    return GrindResult(
+                                        GrindStatus.STUCK,
+                                        iteration,
+                                        reason,
+                                        list(set(all_tools)),
+                                        duration,
+                                        all_hooks_executed,
+                                        task_def.model,
+                                    )
+
+                                # Neither complete nor stuck - continuing
+                                _log(
+                                    verbose,
+                                    "No completion signal found, will continue...",
+                                    "warning",
+                                )
+                except asyncio.TimeoutError:
+                    # Log timeout but continue to next iteration - don't fail
+                    timeout_secs = task_def.query_timeout * 2
+                    _log(
+                        verbose,
+                        f">>> Response timed out after {timeout_secs} seconds, continuing...",
+                        "warning",
+                    )
+                    continue
 
                 if task_def.hooks.post_iteration:
                     if verbose:
@@ -351,36 +428,96 @@ async def grind(
                             # Inject one-shot guidance into the continue prompt
                             guidance_prompt = GUIDANCE_PROMPT.format(guidance=guidance_text)
                             print(Color.success(f"Injecting guidance: {guidance_text}"))
-                            await client.query(guidance_prompt + "\n\n" + CONTINUE_PROMPT)
+                            try:
+                                async with asyncio.timeout(task_def.query_timeout):
+                                    await client.query(guidance_prompt + "\n\n" + CONTINUE_PROMPT)
+                            except asyncio.TimeoutError:
+                                _log(
+                                    verbose,
+                                    f">>> Guidance query timed out after "
+                                    f"{task_def.query_timeout} seconds",
+                                    "warning",
+                                )
                             break  # Continue to next iteration
 
-                        elif action == CheckpointAction.GUIDANCE_PERSIST and guidance_text:
+                        elif (
+                            action == CheckpointAction.GUIDANCE_PERSIST
+                            and guidance_text
+                        ):
                             # Add persistent guidance to prompt config
                             guidance_str = f"Human guidance: {guidance_text}"
                             if task_def.prompt_config.additional_context:
                                 ctx = task_def.prompt_config.additional_context
-                                task_def.prompt_config.additional_context = f"{ctx}\n\n{guidance_str}"
+                                new_context = f"{ctx}\n\n{guidance_str}"
+                                task_def.prompt_config.additional_context = (
+                                    new_context
+                                )
                             else:
                                 task_def.prompt_config.additional_context = guidance_str
                             guidance_prompt = GUIDANCE_PROMPT.format(guidance=guidance_text)
                             print(Color.success(f"Persistent guidance: {guidance_text}"))
-                            await client.query(guidance_prompt + "\n\n" + CONTINUE_PROMPT)
+                            try:
+                                async with asyncio.timeout(task_def.query_timeout):
+                                    await client.query(guidance_prompt + "\n\n" + CONTINUE_PROMPT)
+                            except asyncio.TimeoutError:
+                                _log(
+                                    verbose,
+                                    f">>> Persistent guidance query timed out after "
+                                    f"{task_def.query_timeout} seconds",
+                                    "warning",
+                                )
                             break  # Continue to next iteration
 
                         else:  # CONTINUE
-                            await client.query(CONTINUE_PROMPT)
+                            try:
+                                async with asyncio.timeout(task_def.query_timeout):
+                                    await client.query(CONTINUE_PROMPT)
+                            except asyncio.TimeoutError:
+                                _log(
+                                    verbose,
+                                    f">>> Continue query timed out after "
+                                    f"{task_def.query_timeout} seconds",
+                                    "warning",
+                                )
                             break  # Continue to next iteration
 
                 elif iteration < task_def.max_iterations:
-                    _log(verbose, f"\nSending continue prompt for iteration {iteration + 1}...", "info")
+                    _log(
+                        verbose,
+                        f"\nSending continue prompt for iteration {iteration + 1}...",
+                        "info",
+                    )
                     log_continue_prompt(iteration)
-                    await client.query(CONTINUE_PROMPT)
+                    try:
+                        async with asyncio.timeout(task_def.query_timeout):
+                            await client.query(CONTINUE_PROMPT)
+                    except asyncio.TimeoutError:
+                        _log(
+                            verbose,
+                            f">>> Continue query timed out after "
+                            f"{task_def.query_timeout} seconds",
+                            "warning",
+                        )
                 else:
-                    _log(verbose, f"\nReached max iterations ({task_def.max_iterations})", "warning")
+                    _log(
+                        verbose,
+                        f"\nReached max iterations ({task_def.max_iterations})",
+                        "warning",
+                    )
 
             final_duration = (datetime.now() - start_time).total_seconds()
-            _log(verbose, f">>> RETURNING MAX_ITERATIONS after {iteration} iterations", "warning")
-            log_result("MAX_ITERATIONS", iteration, f"Reached max iterations ({task_def.max_iterations})", list(set(all_tools)), final_duration)
+            _log(
+                verbose,
+                f">>> RETURNING MAX_ITERATIONS after {iteration} iterations",
+                "warning",
+            )
+            log_result(
+                "MAX_ITERATIONS",
+                iteration,
+                f"Reached max iterations ({task_def.max_iterations})",
+                list(set(all_tools)),
+                final_duration,
+            )
             return GrindResult(
                 GrindStatus.MAX_ITERATIONS,
                 iteration,

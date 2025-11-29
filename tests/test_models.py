@@ -163,6 +163,35 @@ class TestTaskDefinition:
         assert task.permission_mode == "requireApproval"
         assert task.max_turns == 100
 
+    def test_validate_empty_task_fails(self):
+        task = TaskDefinition(task="", verify="pytest")
+        errors = task.validate()
+        assert len(errors) == 1
+        assert "Task description cannot be empty" in errors[0]
+
+    def test_validate_empty_verify_fails(self):
+        task = TaskDefinition(task="Fix tests", verify="")
+        errors = task.validate()
+        assert len(errors) == 1
+        assert "Verify command cannot be empty" in errors[0]
+
+    def test_validate_invalid_model_fails(self):
+        task = TaskDefinition(task="Fix tests", verify="pytest", model="invalid")
+        errors = task.validate()
+        assert len(errors) == 1
+        assert "Invalid model: invalid" in errors[0]
+
+    def test_validate_negative_iterations_fails(self):
+        task = TaskDefinition(task="Fix tests", verify="pytest", max_iterations=0)
+        errors = task.validate()
+        assert len(errors) == 1
+        assert "max_iterations must be >= 1" in errors[0]
+
+    def test_validate_valid_task_passes(self):
+        task = TaskDefinition(task="Fix tests", verify="pytest")
+        errors = task.validate()
+        assert len(errors) == 0
+
 
 class TestBatchResult:
     def test_creation(self):

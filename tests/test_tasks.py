@@ -88,6 +88,30 @@ class TestParseTaskFromYaml:
         assert task.permission_mode == "requireApproval"
         assert task.max_turns == 100
 
+    def test_parse_invalid_empty_task_raises_error(self):
+        data = {"task": "", "verify": "pytest"}
+        with pytest.raises(ValueError) as exc_info:
+            parse_task_from_yaml(data)
+        assert "Task description cannot be empty" in str(exc_info.value)
+
+    def test_parse_invalid_empty_verify_raises_error(self):
+        data = {"task": "Fix tests", "verify": ""}
+        with pytest.raises(ValueError) as exc_info:
+            parse_task_from_yaml(data)
+        assert "Verify command cannot be empty" in str(exc_info.value)
+
+    def test_parse_invalid_model_raises_error(self):
+        data = {"task": "Fix tests", "verify": "pytest", "model": "invalid"}
+        with pytest.raises(ValueError) as exc_info:
+            parse_task_from_yaml(data)
+        assert "Invalid model: invalid" in str(exc_info.value)
+
+    def test_parse_invalid_max_iterations_raises_error(self):
+        data = {"task": "Fix tests", "verify": "pytest", "max_iterations": 0}
+        with pytest.raises(ValueError) as exc_info:
+            parse_task_from_yaml(data)
+        assert "max_iterations must be >= 1" in str(exc_info.value)
+
 
 class TestLoadTasks:
     def test_load_yaml_file(self, tmp_path):

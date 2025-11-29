@@ -116,6 +116,22 @@ class TaskDefinition:
     permission_mode: str = "acceptEdits"
     max_turns: int = 50
     interactive: InteractiveConfig = field(default_factory=InteractiveConfig)
+    query_timeout: int = 300  # Timeout in seconds for SDK query operations
+
+    def validate(self) -> list[str]:
+        """Validate task definition, return list of error messages."""
+        errors = []
+        if not self.task or not self.task.strip():
+            errors.append("Task description cannot be empty")
+        if not self.verify or not self.verify.strip():
+            errors.append("Verify command cannot be empty")
+        if self.model not in ("sonnet", "opus", "haiku"):
+            errors.append(f"Invalid model: {self.model}")
+        if self.max_iterations < 1:
+            errors.append(f"max_iterations must be >= 1, got {self.max_iterations}")
+        if self.max_turns < 1:
+            errors.append(f"max_turns must be >= 1, got {self.max_turns}")
+        return errors
 
 
 @dataclass
