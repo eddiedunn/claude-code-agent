@@ -626,6 +626,62 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guide/dag-execution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DAG Execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/git-worktrees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git Worktrees
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guide/slash-commands/" class="md-nav__link">
         
   
@@ -860,6 +916,28 @@
     <span class="md-ellipsis">
       
         batch.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dagpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dag.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#worktreepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        worktree.py
       
     </span>
   </a>
@@ -1941,6 +2019,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#dagpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dag.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#worktreepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        worktree.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#clipy" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2288,12 +2388,14 @@
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>├── engine.py            # Core grind loop orchestration
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>├── tasks.py             # Task loading and parsing
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>├── batch.py             # Batch execution runner
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>├── cli.py               # Command-line interface
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>└── utils.py             # Colors and output formatting
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>grind.py                 # Entry point (thin wrapper)
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>examples/
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>└── enhanced-tasks.yaml  # Example task definitions
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>├── dag.py               # DAG executor for task dependencies
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>├── worktree.py          # Git worktree management
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>├── cli.py               # Command-line interface
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>└── utils.py             # Colors and output formatting
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>grind.py                 # Entry point (thin wrapper)
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>examples/
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>└── enhanced-tasks.yaml  # Example task definitions
 </span></code></pre></div>
 <hr />
 <h2 id="module-responsibilities">Module Responsibilities<a class="headerlink" href="#module-responsibilities" title="Permanent link">&para;</a></h2>
@@ -2307,7 +2409,11 @@
 - <code>GrindStatus</code> - Result status enum
 - <code>GrindResult</code> - Single task execution result
 - <code>TaskDefinition</code> - Complete task specification
-- <code>BatchResult</code> - Batch execution results</p>
+- <code>BatchResult</code> - Batch execution results
+- <code>TaskNode</code> - Task with dependency metadata
+- <code>TaskGraph</code> - Directed acyclic graph of tasks
+- <code>DAGResult</code> - DAG execution results
+- <code>WorktreeConfig</code> - Git worktree isolation settings</p>
 <p><strong>Why</strong>: Single source of truth for data structures. Easy to find, easy to import.</p>
 <hr />
 <h3 id="promptspy">prompts.py<a class="headerlink" href="#promptspy" title="Permanent link">&para;</a></h3>
@@ -2337,7 +2443,8 @@
 <p><strong>Purpose</strong>: Task definition loading and parsing</p>
 <p><strong>Contents</strong>:
 - <code>parse_task_from_yaml()</code> - Convert YAML dict to TaskDefinition
-- <code>load_tasks()</code> - Load from file (YAML or JSON)</p>
+- <code>load_tasks()</code> - Load from file (YAML or JSON)
+- <code>build_task_graph()</code> - Load tasks with dependencies as a DAG</p>
 <p><strong>Why</strong>: Clean separation between file I/O and task execution.</p>
 <hr />
 <h3 id="batchpy">batch.py<a class="headerlink" href="#batchpy" title="Permanent link">&para;</a></h3>
@@ -2346,11 +2453,24 @@
 - <code>run_batch()</code> - Execute list of tasks, aggregate results</p>
 <p><strong>Why</strong>: Batch is a distinct mode. Keep it separate from single-task logic.</p>
 <hr />
+<h3 id="dagpy">dag.py<a class="headerlink" href="#dagpy" title="Permanent link">&para;</a></h3>
+<p><strong>Purpose</strong>: DAG-based task execution with dependencies</p>
+<p><strong>Contents</strong>:
+- <code>DAGExecutor</code> - Execute tasks in topological order with optional parallelism</p>
+<p><strong>Why</strong>: Dependency-aware execution is a distinct orchestration mode.</p>
+<hr />
+<h3 id="worktreepy">worktree.py<a class="headerlink" href="#worktreepy" title="Permanent link">&para;</a></h3>
+<p><strong>Purpose</strong>: Git worktree management for parallel isolation</p>
+<p><strong>Contents</strong>:
+- <code>WorktreeManager</code> - Create, merge, and cleanup Git worktrees
+- <code>WorktreeError</code> - Exception for worktree operations</p>
+<p><strong>Why</strong>: Git operations isolated for testability and reuse.</p>
+<hr />
 <h3 id="clipy">cli.py<a class="headerlink" href="#clipy" title="Permanent link">&para;</a></h3>
 <p><strong>Purpose</strong>: Command-line interface</p>
 <p><strong>Contents</strong>:
 - <code>main()</code> - Argument parsing
-- <code>main_async()</code> - Command dispatch (run/batch/decompose)</p>
+- <code>main_async()</code> - Command dispatch (run/batch/decompose/dag)</p>
 <p><strong>Why</strong>: CLI is presentation layer. Core logic stays in engine.</p>
 <hr />
 <h3 id="utilspy">utils.py<a class="headerlink" href="#utilspy" title="Permanent link">&para;</a></h3>
@@ -2366,13 +2486,20 @@
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    ↓
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>Task Definition (from args or file)
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    ↓
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>Engine (grind loop)
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    ↓
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>ClaudeSDKClient ← → Hooks (at lifecycle points)
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    ↓
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>Result
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    ↓
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>Output Formatting
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>┌─────────────────────────────────────────────┐
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>│           Execution Mode                     │
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>├─────────────────────────────────────────────┤
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>│  run      → Engine (grind loop)             │
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>│  batch    → Batch Runner → Engine           │
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>│  dag      → DAGExecutor → WorktreeManager   │
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>│                         → Engine            │
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>└─────────────────────────────────────────────┘
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    ↓
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>ClaudeSDKClient ← → Hooks (at lifecycle points)
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    ↓
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>Result
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    ↓
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>Output Formatting
 </span></code></pre></div>
 <hr />
 <h2 id="key-design-principles">Key Design Principles<a class="headerlink" href="#key-design-principles" title="Permanent link">&para;</a></h2>
@@ -2388,7 +2515,8 @@
 <div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>cli.py → engine.py → hooks.py → models.py
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>       → tasks.py  → prompts.py
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>       → batch.py
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>       → utils.py
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>       → dag.py    → worktree.py
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>       → utils.py
 </span></code></pre></div>
 <p>No circular dependencies. Clear hierarchy.</p>
 <h3 id="4-extensibility">4. Extensibility<a class="headerlink" href="#4-extensibility" title="Permanent link">&para;</a></h3>
