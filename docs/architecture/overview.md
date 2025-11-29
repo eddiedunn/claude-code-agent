@@ -15,6 +15,8 @@ grind/
 ├── engine.py            # Core grind loop orchestration
 ├── tasks.py             # Task loading and parsing
 ├── batch.py             # Batch execution runner
+├── dag.py               # DAG executor for task dependencies
+├── worktree.py          # Git worktree management
 ├── cli.py               # Command-line interface
 └── utils.py             # Colors and output formatting
 
@@ -39,6 +41,10 @@ examples/
 - `GrindResult` - Single task execution result
 - `TaskDefinition` - Complete task specification
 - `BatchResult` - Batch execution results
+- `TaskNode` - Task with dependency metadata
+- `TaskGraph` - Directed acyclic graph of tasks
+- `DAGResult` - DAG execution results
+- `WorktreeConfig` - Git worktree isolation settings
 
 **Why**: Single source of truth for data structures. Easy to find, easy to import.
 
@@ -85,6 +91,7 @@ examples/
 **Contents**:
 - `parse_task_from_yaml()` - Convert YAML dict to TaskDefinition
 - `load_tasks()` - Load from file (YAML or JSON)
+- `build_task_graph()` - Load tasks with dependencies as a DAG
 
 **Why**: Clean separation between file I/O and task execution.
 
@@ -100,12 +107,33 @@ examples/
 
 ---
 
+### dag.py
+**Purpose**: DAG-based task execution with dependencies
+
+**Contents**:
+- `DAGExecutor` - Execute tasks in topological order with optional parallelism
+
+**Why**: Dependency-aware execution is a distinct orchestration mode.
+
+---
+
+### worktree.py
+**Purpose**: Git worktree management for parallel isolation
+
+**Contents**:
+- `WorktreeManager` - Create, merge, and cleanup Git worktrees
+- `WorktreeError` - Exception for worktree operations
+
+**Why**: Git operations isolated for testability and reuse.
+
+---
+
 ### cli.py
 **Purpose**: Command-line interface
 
 **Contents**:
 - `main()` - Argument parsing
-- `main_async()` - Command dispatch (run/batch/decompose)
+- `main_async()` - Command dispatch (run/batch/decompose/dag)
 
 **Why**: CLI is presentation layer. Core logic stays in engine.
 
@@ -130,7 +158,14 @@ CLI Input
     ↓
 Task Definition (from args or file)
     ↓
-Engine (grind loop)
+┌─────────────────────────────────────────────┐
+│           Execution Mode                     │
+├─────────────────────────────────────────────┤
+│  run      → Engine (grind loop)             │
+│  batch    → Batch Runner → Engine           │
+│  dag      → DAGExecutor → WorktreeManager   │
+│                         → Engine            │
+└─────────────────────────────────────────────┘
     ↓
 ClaudeSDKClient ← → Hooks (at lifecycle points)
     ↓
@@ -158,6 +193,7 @@ Every concept exists in exactly ONE place. Want to change how prompts are built?
 cli.py → engine.py → hooks.py → models.py
        → tasks.py  → prompts.py
        → batch.py
+       → dag.py    → worktree.py
        → utils.py
 ```
 

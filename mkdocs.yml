@@ -39,6 +39,8 @@ nav:
   - User Guide:
     - Using with Claude Code: guide/using-with-claude-code.md
     - Features: guide/features.md
+    - DAG Execution: guide/dag-execution.md
+    - Git Worktrees: guide/git-worktrees.md
     - Slash Commands: guide/slash-commands.md
   - Architecture:
     - Overview: architecture/overview.md
