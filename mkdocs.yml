@@ -39,11 +39,15 @@ nav:
   - User Guide:
     - Using with Claude Code: guide/using-with-claude-code.md
     - Features: guide/features.md
+    - Model Selection: guide/model-selection.md
+    - Task Decomposition: guide/decompose.md
+    - TUI - Agent Orchestration: tui.md
     - DAG Execution: guide/dag-execution.md
     - Git Worktrees: guide/git-worktrees.md
     - Slash Commands: guide/slash-commands.md
   - Architecture:
     - Overview: architecture/overview.md
+    - Orchestration Vision: architecture/orchestration-vision.md
   - SDK Reference:
     - Overview: sdk/overview.md
     - Python SDK: sdk/python-reference.md

@@ -9,6 +9,8 @@ dependencies = [
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.7.0",
     "pyyaml>=6.0",
+    "textual>=0.40.0",
+    "aiofiles>=23.0.0",
 ]
 
 [project.optional-dependencies]
@@ -18,6 +20,7 @@ dev = [
     "ruff>=0.1.0",
     "playwright>=1.40.0",
     "pytest-cov>=4.0.0",
+    "textual-dev",
 ]
 
 [project.scripts]
@@ -44,7 +47,14 @@ select = ["E", "F", "I", "N", "W"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 markers = [
-    "integration: integration tests (may be slow)",
+    "integration: Integration tests requiring MinIO/external services",
+    "sox_critical: SOX-critical tests that MUST pass in production (100% required)",
+    "security: Security control tests (authentication, authorization, input validation)",
+    "worm: WORM immutability tests (deletion/modification prevention)",
+    "audit_trail: Audit logging and trail completeness tests",
+    "authorization: Authorization and access control tests",
+    "concurrency: Threading and race condition tests",
+    "production_smoke: Production configuration validation tests",
 ]
 
 [tool.coverage.run]

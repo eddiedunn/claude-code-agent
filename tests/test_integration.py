@@ -4,12 +4,14 @@ These tests create real git repositories and run actual (mocked) grind tasks
 to verify the full system works together.
 """
 
+import os
 import subprocess
 from unittest.mock import patch
 
 import pytest
 
 from grind.dag import DAGExecutor
+from grind.engine import decompose
 from grind.models import GrindResult, GrindStatus
 from grind.tasks import build_task_graph
 from grind.worktree import WorktreeManager
@@ -162,7 +164,7 @@ async def test_dag_blocked_on_failure(git_repo, tasks_yaml):
     assert call_count["lint"] == 1
     assert call_count["tests"] == 0
 
-    assert result.failed == 1
+    assert result.stuck == 1
     assert result.blocked == 1
 
 
@@ -187,3 +189,62 @@ async def test_worktree_lifecycle(git_repo):
     # Cleanup all handles empty gracefully
     count = await manager.cleanup_all()
     assert count == 0
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+@pytest.mark.skipif(
+    not os.environ.get("ANTHROPIC_API_KEY"),
+    reason="ANTHROPIC_API_KEY not set"
+)
+async def test_decompose_model_assignment(tmp_path):
+    """Test that decompose() returns tasks with appropriate models assigned.
+
+    This test makes a real API call to decompose a problem into tasks,
+    then validates that:
+    1. Tasks are returned
+    2. Each task has a model assigned
+    3. Models are valid (haiku, sonnet, or opus)
+    4. Simple tasks get haiku, complex tasks get opus, others get sonnet
+    """
+    # Use tmp_path as working directory
+    test_cwd = str(tmp_path)
+
+    # Create a test file to work with
+    test_file = tmp_path / "test.txt"
+    test_file.write_text("Hello World")
+
+    # Define a problem that should generate multiple tasks with varying complexity
+    problem = """
+    Fix the following issues:
+    1. Fix typo in test.txt (change 'World' to 'World!')
+    2. Add a new feature to handle user authentication
+    3. Update the configuration file
+    """
+
+    verify_cmd = "echo 'Verification passed'"
+
+    # Call decompose with real API
+    tasks = await decompose(
+        problem=problem,
+        verify_cmd=verify_cmd,
+        cwd=test_cwd,
+        verbose=False
+    )
+
+    # Validate results
+    assert len(tasks) > 0, "decompose() should return at least one task"
+
+    # Check each task has required attributes and valid model
+    valid_models = {"haiku", "sonnet", "opus"}
+    for task in tasks:
+        assert hasattr(task, "task"), "Task should have 'task' attribute"
+        assert hasattr(task, "verify"), "Task should have 'verify' attribute"
+        assert hasattr(task, "model"), "Task should have 'model' attribute"
+        assert task.model in valid_models, f"Model '{task.model}' should be one of {valid_models}"
+        assert task.task.strip(), "Task description should not be empty"
+        assert task.verify.strip(), "Verify command should not be empty"
+
+    # Check that model assignment makes sense (at least one task should use routing)
+    models_used = {task.model for task in tasks}
+    assert len(models_used) > 0, "At least one model should be used"

@@ -1,4 +1,4 @@
-.PHONY: help install install-commands test test-verbose test-watch lint lint-fix format check clean docs docs-serve docs-build docs-sync-sdk run-example grind
+.PHONY: help install install-commands test test-verbose test-watch lint lint-fix format check clean docs docs-serve docs-build docs-sync-sdk run-example grind grind-dag grind-dag-parallel sonar-scan
 
 # Default target
 .DEFAULT_GOAL := help
@@ -40,6 +40,10 @@ test-watch:
 test-cov:
 	@echo "Running tests with coverage..."
 	uv run pytest --cov=grind --cov-report=html --cov-report=term
+
+test-cov-xml:
+	@echo "Running tests with XML coverage for SonarQube..."
+	uv run pytest --cov=grind --cov-report=xml:coverage.xml -v
 
 # Linting and formatting
 lint:
@@ -83,6 +87,19 @@ grind:
 	@test -f "$(TASKS)" || (echo "Error: $(TASKS) not found" && exit 1)
 	uv run grind batch "$(TASKS)" --interactive --verbose
 
+# Run grind in DAG mode (respects task dependencies)
+grind-dag:
+	@test -n "$(TASKS)" || (echo "Usage: make grind-dag TASKS=path/to/tasks.yaml" && exit 1)
+	@test -f "$(TASKS)" || (echo "Error: $(TASKS) not found" && exit 1)
+	uv run grind dag "$(TASKS)" --verbose
+
+# Run grind in DAG mode with parallel execution
+grind-dag-parallel:
+	@test -n "$(TASKS)" || (echo "Usage: make grind-dag-parallel TASKS=path/to/tasks.yaml [PARALLEL=3]" && exit 1)
+	@test -f "$(TASKS)" || (echo "Error: $(TASKS) not found" && exit 1)
+	$(eval PARALLEL ?= 3)
+	uv run grind dag "$(TASKS)" --parallel $(PARALLEL) --verbose
+
 # Run examples
 run-example:
 	@echo "Running single task example..."
@@ -119,6 +136,34 @@ build:
 	@echo "Building package..."
 	uv build
 
+# SonarQube Analysis
+sonar-scan:
+	@echo "Running SonarQube baseline scan..."
+	@echo "Step 1: Retrieving SonarQube token..."
+	@TOKEN=$$(secret-manager show -o sonarqube/your-project/scan-token 2>/dev/null); \
+	if [ -z "$$TOKEN" ]; then \
+		echo "Error: No Project SonarQube token found"; \
+		echo "Run: secret-manager show sonarqube/your-project/scan-token"; \
+		exit 1; \
+	fi; \
+	echo "Step 2: Running tests with coverage..."; \
+	uv run pytest --cov=grind --cov-report=xml:coverage.xml -q || true; \
+	if [ ! -f coverage.xml ]; then \
+		echo "Warning: coverage.xml not generated, proceeding without coverage"; \
+	fi; \
+	echo "Step 3: Running sonar-scanner..."; \
+	sonar-scanner \
+		-Dsonar.projectKey=grind-loop \
+		-Dsonar.projectName=grind-loop \
+		-Dsonar.sources=. \
+		-Dsonar.exclusions="**/*test*/**,**/tests/**,**/__pycache__/**,**/venv/**,**/.venv/**,**/node_modules/**,**/tools/**,**/site/**,**/docs/**" \
+		-Dsonar.python.coverage.reportPaths=coverage.xml \
+		-Dsonar.host.url=http://192.168.x.x:9200 \
+		-Dsonar.token="$$TOKEN"; \
+	echo ""; \
+	echo "Analysis complete! View results at:"; \
+	echo "http://192.168.x.x:9200/dashboard?id=grind-loop"
+
 # Help
 help:
 	@echo "Grind Loop - Available Make Commands"
@@ -140,6 +185,7 @@ help:
 	@echo "  make format        - Format code with ruff"
 	@echo "  make format-check  - Check code formatting without changes"
 	@echo "  make check         - Run format + lint + test (pre-commit check)"
+	@echo "  make sonar-scan    - Run SonarQube scan with coverage (Project)"
 	@echo ""
 	@echo "Documentation:"
 	@echo "  make docs          - Sync SDK docs and start dev server"
@@ -148,7 +194,10 @@ help:
 	@echo "  make docs-sync-sdk - Sync SDK docs from Anthropic"
 	@echo ""
 	@echo "Grind:"
-	@echo "  make grind TASKS=path/to/tasks.yaml - Run batch with interactive + verbose"
+	@echo "  make grind TASKS=path/to/tasks.yaml              - Run batch with interactive + verbose"
+	@echo "  make grind-dag TASKS=path/to/tasks.yaml          - Run DAG mode (respects dependencies)"
+	@echo "  make grind-dag-parallel TASKS=path/to/tasks.yaml - Run DAG with parallel execution (default: 3)"
+	@echo "  make grind-dag-parallel TASKS=tasks.yaml PARALLEL=5 - Run DAG with 5 parallel workers"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make run-example       - Run simple grind example"

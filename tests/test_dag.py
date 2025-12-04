@@ -93,8 +93,8 @@ class TestDAGExecutor:
             executor = DAGExecutor(graph)
             result = await executor.execute()
 
-        # A failed, B and C blocked
-        assert result.failed == 1
+        # A stuck, B and C blocked
+        assert result.stuck == 1
         assert result.blocked == 2
         assert result.completed == 0
         assert "Blocked" in result.results["B"].message
@@ -125,9 +125,9 @@ class TestDAGExecutor:
             executor = DAGExecutor(graph)
             result = await executor.execute()
 
-        # A and C completed, B failed, D blocked
+        # A and C completed, B stuck, D blocked
         assert result.completed == 2
-        assert result.failed == 1
+        assert result.stuck == 1
         assert result.blocked == 1
         assert "A" in call_order
         assert "B" in call_order

@@ -1,0 +1,128 @@
+tasks:
+  # PHASE 2: Extract Agent Abstraction
+
+  - id: create_orchestration_package
+    task: "Create grind/orchestration/ package with __init__.py - empty module for now"
+    verify: "test -d grind/orchestration && test -f grind/orchestration/__init__.py"
+    max_iterations: 5
+    hooks:
+      pre_grind: ["/implementation-engineer"]
+
+  - id: agent_protocol
+    task: "Create grind/orchestration/agent.py with Agent protocol and AgentResult types - use simple dict input/output not generics, follow DAGExecutor pattern"
+    verify: "uv run python -c 'from grind.orchestration.agent import Agent, AgentResult, AgentStatus'"
+    max_iterations: 5
+    depends_on: [create_orchestration_package]
+    hooks:
+      pre_grind: ["/implementation-engineer"]
+
+  - id: event_system
+    task: "Create grind/orchestration/events.py with AgentEvent dataclass, EventType enum, and EventBus pub-sub pattern"
+    verify: "uv run python -c 'from grind.orchestration.events import AgentEvent, EventType, EventBus'"
+    max_iterations: 5
+    depends_on: [create_orchestration_package]
+    hooks:
+      pre_grind: ["/implementation-engineer"]
+
+  - id: metrics_collector
+    task: "Create grind/orchestration/metrics.py with MetricsCollector class - track duration, cost, success_rate per agent"
+    verify: "uv run python -c 'from grind.orchestration.metrics import MetricsCollector'"
+    max_iterations: 5
+    depends_on: [create_orchestration_package]
+    hooks:
+      pre_grind: ["/implementation-engineer"]
+
+  - id: grind_agent_wrapper
+    task: "Create grind/orchestration/grind_agent.py - GrindAgent wraps existing grind() function as Agent, delegates to grind/engine.py"
+    verify: "uv run python -c 'from grind.orchestration.grind_agent import GrindAgent'"
+    max_iterations: 5
+    depends_on: [agent_protocol]
+    hooks:
+      pre_grind: ["/implementation-engineer"]
+
+  # PHASE 3: Build Orchestrator
+
+  - id: orchestrator_core
+    task: "Create grind/orchestration/orchestrator.py - stateless Orchestrator with add_agent(), run_all(), integrates EventBus and MetricsCollector"
+    verify: "uv run python -c 'from grind.orchestration.orchestrator import Orchestrator'"
+    max_iterations: 5
+    depends_on: [agent_protocol, event_system, metrics_collector]
+    hooks:
+      pre_grind: ["/implementation-engineer"]
+
+  - id: update_models
+    task: "Add orchestration result types to grind/models.py - OrchestratorResult, ExecutionContext dataclasses"
+    verify: "uv run python -c 'from grind.models import OrchestratorResult, ExecutionContext'"
+    max_iterations: 5
+    depends_on: [orchestrator_core]
+    hooks:
+      pre_grind: ["/implementation-engineer"]
+
+  - id: update_package_init
+    task: "Update grind/orchestration/__init__.py to export Agent, AgentResult, GrindAgent, Orchestrator, EventBus, MetricsCollector"
+    verify: "uv run python -c 'from grind.orchestration import Agent, GrindAgent, Orchestrator, EventBus'"
+    max_iterations: 5
+    depends_on: [grind_agent_wrapper, orchestrator_core]
+    hooks:
+      pre_grind: ["/implementation-engineer"]
+
+  # Integration and Testing
+
+  - id: unit_tests_agent
+    task: "Create tests/test_orchestration_agent.py - test Agent protocol, GrindAgent wrapper, AgentResult"
+    verify: "uv run pytest tests/test_orchestration_agent.py -v"
+    max_iterations: 5
+    depends_on: [grind_agent_wrapper]
+    hooks:
+      pre_grind: ["/implementation-engineer"]
+
+  - id: unit_tests_events
+    task: "Create tests/test_orchestration_events.py - test EventBus subscribe/emit, event propagation"
+    verify: "uv run pytest tests/test_orchestration_events.py -v"
+    max_iterations: 5
+    depends_on: [event_system]
+    hooks:
+      pre_grind: ["/implementation-engineer"]
+
+  - id: unit_tests_orchestrator
+    task: "Create tests/test_orchestration_core.py - test Orchestrator with multiple GrindAgents, dependency resolution, event emission"
+    verify: "uv run pytest tests/test_orchestration_core.py -v"
+    max_iterations: 5
+    depends_on: [orchestrator_core, update_package_init]
+    hooks:
+      pre_grind: ["/implementation-engineer"]
+
+  - id: integration_dag_events
+    task: "Update grind/dag.py DAGExecutor to emit events via EventBus - integrate with on_task_start/on_task_complete callbacks"
+    verify: "uv run pytest tests/test_dag.py -v"
+    max_iterations: 5
+    depends_on: [event_system, unit_tests_orchestrator]
+    hooks:
+      pre_grind: ["/implementation-engineer"]
+
+  - id: update_documentation
+    task: "Create docs/architecture/orchestration-implementation.md documenting Phase 2-3 implementation with examples"
+    verify: "test -f docs/architecture/orchestration-implementation.md"
+    max_iterations: 5
+    depends_on: [unit_tests_orchestrator, integration_dag_events]
+    hooks:
+      pre_grind: ["/implementation-engineer"]
+
+  # Validation
+
+  - id: run_all_tests
+    task: "Run full test suite to ensure no regressions - all existing tests must pass"
+    verify: "uv run pytest tests/ -v"
+    model: haiku
+    max_iterations: 5
+    depends_on: [update_documentation]
+    hooks:
+      pre_grind: ["/implementation-engineer"]
+
+  - id: lint_check
+    task: "Fix any linting errors in orchestration package"
+    verify: "uv run ruff check grind/orchestration/"
+    max_iterations: 5
+    depends_on: [run_all_tests]
+    hooks:
+      pre_grind: ["/implementation-engineer"]

@@ -63,18 +63,17 @@ class GrindHooks:
     post_grind: list[str | SlashCommandHook] = field(default_factory=list)
 
     def normalize(self) -> None:
-        self.pre_grind = [
-            SlashCommandHook(cmd) if isinstance(cmd, str) else cmd
-            for cmd in self.pre_grind
-        ]
-        self.post_iteration = [
-            SlashCommandHook(cmd) if isinstance(cmd, str) else cmd
-            for cmd in self.post_iteration
-        ]
-        self.post_grind = [
-            SlashCommandHook(cmd) if isinstance(cmd, str) else cmd
-            for cmd in self.post_grind
-        ]
+        def _normalize_hook(cmd):
+            if isinstance(cmd, str):
+                return SlashCommandHook(cmd)
+            elif isinstance(cmd, dict):
+                return SlashCommandHook(**cmd)
+            else:
+                return cmd
+
+        self.pre_grind = [_normalize_hook(cmd) for cmd in self.pre_grind]
+        self.post_iteration = [_normalize_hook(cmd) for cmd in self.post_iteration]
+        self.post_grind = [_normalize_hook(cmd) for cmd in self.post_grind]
 
 
 @dataclass
@@ -105,11 +104,24 @@ class GrindResult:
 
 @dataclass
 class TaskDefinition:
+    """Definition for an automated fix-verify grind task.
+
+    Model Selection Philosophy:
+    - haiku: Default choice for most tasks. Fast, cost-effective, and capable
+      of handling typical fix-verify loops efficiently.
+    - sonnet: Use for complex tasks requiring deeper reasoning or nuanced
+      code understanding.
+    - opus: Reserve for the most challenging tasks requiring maximum capability.
+
+    The default is 'haiku' to optimize for speed and cost while maintaining
+    quality for the majority of automated grind scenarios.
+    """
     task: str
     verify: str
     max_iterations: int = 10
     cwd: str | None = None
-    model: Literal["sonnet", "opus", "haiku"] = "sonnet"
+    model: Literal["sonnet", "opus", "haiku"] = "haiku"
+    depends_on: list[str] = field(default_factory=list)
     hooks: GrindHooks = field(default_factory=GrindHooks)
     prompt_config: PromptConfig = field(default_factory=PromptConfig)
     allowed_tools: list[str] | None = None
@@ -117,6 +129,7 @@ class TaskDefinition:
     max_turns: int = 50
     interactive: InteractiveConfig = field(default_factory=InteractiveConfig)
     query_timeout: int = 300  # Timeout in seconds for SDK query operations
+    enable_interleaved_thinking: bool = True
 
     def validate(self) -> list[str]:
         """Validate task definition, return list of error messages."""
@@ -131,6 +144,8 @@ class TaskDefinition:
             errors.append(f"max_iterations must be >= 1, got {self.max_iterations}")
         if self.max_turns < 1:
             errors.append(f"max_turns must be >= 1, got {self.max_turns}")
+        if not isinstance(self.enable_interleaved_thinking, bool):
+            errors.append(f"enable_interleaved_thinking must be a boolean, got {type(self.enable_interleaved_thinking).__name__}")
         return errors
 
 
@@ -139,6 +154,7 @@ class BatchResult:
     total: int
     completed: int
     stuck: int
+    max_iterations: int
     failed: int
     results: list[tuple[str, GrindResult]]
     duration_seconds: float
@@ -205,7 +221,7 @@ class TaskGraph:
         4. Add nodes to result when their in-degree reaches 0
         """
         # Calculate in-degree for each node
-        in_degree = {nid: 0 for nid in self.nodes}
+        in_degree = dict.fromkeys(self.nodes, 0)
         for node in self.nodes.values():
             for dep in node.depends_on:
                 if dep in self.nodes:
@@ -235,16 +251,25 @@ class TaskGraph:
         2. No cycles exist in the dependency graph
         """
         errors = []
+        errors.extend(self._validate_dependencies())
+        cycle_error = self._detect_cycles()
+        if cycle_error:
+            errors.append(cycle_error)
+        return errors
 
-        # Check for missing dependencies
+    def _validate_dependencies(self) -> list[str]:
+        """Check that all dependencies reference existing tasks."""
+        errors = []
         for node in self.nodes.values():
             for dep in node.depends_on:
                 if dep not in self.nodes:
                     errors.append(
                         f"Task '{node.id}' depends on non-existent task '{dep}'"
                     )
+        return errors
 
-        # Check for cycles using DFS
+    def _detect_cycles(self) -> str | None:
+        """Detect cycles in dependency graph using DFS. Returns error message if cycle found."""
         visited: set[str] = set()
         rec_stack: set[str] = set()
 
@@ -254,21 +279,17 @@ class TaskGraph:
             node = self.nodes.get(nid)
             if node:
                 for dep in node.depends_on:
-                    if dep not in visited:
-                        if has_cycle(dep):
-                            return True
-                    elif dep in rec_stack:
+                    if dep in rec_stack:
+                        return True
+                    if dep not in visited and has_cycle(dep):
                         return True
             rec_stack.remove(nid)
             return False
 
         for nid in self.nodes:
-            if nid not in visited:
-                if has_cycle(nid):
-                    errors.append("Cycle detected in task dependencies")
-                    break
-
-        return errors
+            if nid not in visited and has_cycle(nid):
+                return "Cycle detected in task dependencies"
+        return None
 
 
 @dataclass
@@ -279,8 +300,36 @@ class DAGResult:
     """
     total: int
     completed: int
+    stuck: int
+    max_iterations: int
     failed: int
     blocked: int  # Tasks skipped due to failed dependencies
     execution_order: list[str]
     results: dict[str, GrindResult] = field(default_factory=dict)
     duration_seconds: float = 0.0
+
+
+@dataclass
+class ExecutionContext:
+    """Context for orchestrator execution.
+
+    Holds execution state and configuration for a run of the orchestrator.
+    This is ephemeral and created per orchestrator run.
+    """
+    agents: dict[str, Any] = field(default_factory=dict)
+    shared_state: dict[str, Any] = field(default_factory=dict)
+    start_time: float = 0.0
+
+
+@dataclass
+class OrchestratorResult:
+    """Result of orchestrator execution across multiple agents.
+
+    Aggregates results from running multiple agents via the orchestrator.
+    """
+    agent_results: dict[str, Any] = field(default_factory=dict)
+    total_agents: int = 0
+    successful_agents: int = 0
+    failed_agents: int = 0
+    duration_seconds: float = 0.0
+    context: ExecutionContext | None = None

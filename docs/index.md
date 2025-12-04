@@ -1,6 +1,8 @@
 # Grind Loop
 
-Automated fix-verify loops powered by Claude AI agents.
+Automated fix-verify loops powered by Claude AI agents with intelligent model selection.
+
+> **December 2025 Update:** Now featuring Opus 4.5 decomposition, Haiku 4.5 by default, and intelligent cost-aware routing for 3-5x cost savings.
 
 ## What is Grind Loop?
 
@@ -16,12 +18,24 @@ uv run grind.py run -t "Fix all test failures" -v "pytest tests/ -v"
 
 ## Key Features
 
-- **Model Selection**: Choose haiku/sonnet/opus per task for optimal cost/quality
+- **Model Selection**: haiku default for speed/cost, sonnet for medium complexity, opus for planning/architecture
 - **Slash Command Hooks**: Execute commands at key lifecycle points
 - **Custom Prompts**: Add domain-specific expertise to tasks
 - **Task Decomposition**: Automatically break large problems into subtasks
 - **Batch Execution**: Run multiple tasks sequentially
 - **Context-Aware**: `/generate-tasks` command analyzes conversation history
+
+## Model Selection & Pricing
+
+Choose the right model for your task based on complexity and budget (December 2025 rates):
+
+| Model | Use Case | Input (per 1M tokens) | Output (per 1M tokens) |
+|-------|----------|----------------------|------------------------|
+| **haiku** (default) | Simple fixes, linting, formatting | $0.25 | $1.25 |
+| **sonnet** | Bug fixes, refactoring, medium complexity | $3.00 | $15.00 |
+| **opus** | Planning, architecture, complex logic | $15.00 | $75.00 |
+
+**Recommendation**: Start with haiku for most tasks. Use sonnet for medium complexity work. Reserve opus for architectural decisions and complex planning tasks.
 
 ## Quick Start
 
@@ -68,11 +82,16 @@ Clean, modular, single-responsibility design throughout.
 
 ## Documentation
 
+### New in v2.0 (December 2025)
+- **[Model Selection Guide](guide/model-selection.md)** - Haiku/Sonnet/Opus selection & CostAwareRouter
+- **[Task Decomposition Guide](guide/decompose.md)** - Opus 4.5 with extended thinking
+- **[Migration Guide](MIGRATION.md)** - Upgrade from v1.x
+
+### Core Documentation
 - **[Getting Started](getting-started/quickstart.md)** - Installation and first steps
 - **[User Guide](guide/features.md)** - Complete feature reference
 - **[Architecture](architecture/overview.md)** - System design and principles
 - **[SDK Reference](sdk/overview.md)** - Claude Agent SDK documentation
-- **[Development](development/contributing.md)** - Contributing guidelines
 
 ## Examples
 

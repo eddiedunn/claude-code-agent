@@ -50,6 +50,43 @@ class TestParseTaskFromYaml:
         assert len(task.hooks.post_iteration) == 1
         assert len(task.hooks.post_grind) == 1
 
+    def test_task_with_dict_hooks(self):
+        from grind.models import HookTrigger, SlashCommandHook
+
+        data = {
+            "task": "Test dict hooks",
+            "verify": "true",
+            "hooks": {
+                "pre_grind": ["/setup"],
+                "post_iteration": [
+                    {"command": "/compact", "trigger": "every_n", "trigger_count": 5},
+                    {"command": "/checkpoint", "trigger": "on_error"}
+                ],
+                "post_grind": ["/cleanup"]
+            }
+        }
+        task = parse_task_from_yaml(data)
+
+        assert len(task.hooks.pre_grind) == 1
+        assert isinstance(task.hooks.pre_grind[0], SlashCommandHook)
+        assert task.hooks.pre_grind[0].command == "/setup"
+
+        assert len(task.hooks.post_iteration) == 2
+
+        hook1 = task.hooks.post_iteration[0]
+        assert isinstance(hook1, SlashCommandHook)
+        assert hook1.command == "/compact"
+        assert hook1.trigger == HookTrigger.EVERY_N
+        assert hook1.trigger_count == 5
+
+        hook2 = task.hooks.post_iteration[1]
+        assert isinstance(hook2, SlashCommandHook)
+        assert hook2.command == "/checkpoint"
+        assert hook2.trigger == HookTrigger.ON_ERROR
+
+        assert len(task.hooks.post_grind) == 1
+        assert isinstance(task.hooks.post_grind[0], SlashCommandHook)
+
     def test_task_with_prompt_config(self):
         data = {
             "task": "Security audit",

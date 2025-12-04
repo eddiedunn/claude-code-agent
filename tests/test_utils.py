@@ -142,6 +142,7 @@ class TestPrintBatchSummary:
             total=2,
             completed=2,
             stuck=0,
+            max_iterations=0,
             failed=0,
             results=results,
             duration_seconds=25.0
@@ -169,6 +170,7 @@ class TestPrintBatchSummary:
             total=3,
             completed=1,
             stuck=1,
+            max_iterations=0,
             failed=1,
             results=results,
             duration_seconds=27.0

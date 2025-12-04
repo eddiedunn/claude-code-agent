@@ -166,6 +166,8 @@ def print_batch_summary(r: BatchResult) -> None:
     badges = [make_badge(Color.BG_GREEN, r.completed, "COMPLETE")]
     if r.stuck:
         badges.append(make_badge(Color.BG_YELLOW, r.stuck, "STUCK"))
+    if r.max_iterations:
+        badges.append(make_badge(Color.BG_BLUE, r.max_iterations, "MAX_ITER"))
     if r.failed:
         badges.append(make_badge(Color.BG_RED, r.failed, "FAILED"))
 

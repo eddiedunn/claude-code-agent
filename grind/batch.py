@@ -13,7 +13,7 @@ async def run_batch(
 ) -> BatchResult:
     start = datetime.now()
     results: list[tuple[str, GrindResult]] = []
-    completed = stuck = failed = 0
+    completed = stuck = max_iterations = failed = 0
 
     for i, t in enumerate(tasks, 1):
         print_task_header(i, len(tasks), t)
@@ -34,6 +34,8 @@ async def run_batch(
             if stop_on_stuck:
                 print(Color.warning("\n  Stopping batch (--stop-on-stuck)"))
                 break
+        elif result.status == GrindStatus.MAX_ITERATIONS:
+            max_iterations += 1
         else:
             failed += 1
 
@@ -49,6 +51,7 @@ async def run_batch(
         len(tasks),
         completed,
         stuck,
+        max_iterations,
         failed,
         results,
         duration

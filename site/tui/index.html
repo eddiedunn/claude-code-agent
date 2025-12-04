@@ -1,0 +1,4281 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Automated fix-verify loops powered by Claude AI agents">
+      
+      
+      
+        <link rel="canonical" href="https://github.com/eddiedunn/claude-code-agent/tui/">
+      
+      
+        <link rel="prev" href="../guide/decompose/">
+      
+      
+        <link rel="next" href="../guide/dag-execution/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.0">
+    
+    
+      
+        <title>TUI - Agent Orchestration - Grind Loop Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.618322db.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tui-agent-orchestration-interface" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Grind Loop Documentation" class="md-header__button md-logo" aria-label="Grind Loop Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Grind Loop Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              TUI - Agent Orchestration
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/eddiedunn/claude-code-agent" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    eddiedunn/claude-code-agent
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting-started/quickstart/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../guide/using-with-claude-code/" class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/overview/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../sdk/overview/" class="md-tabs__link">
+          
+  
+  
+  SDK Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Grind Loop Documentation" class="md-nav__button md-logo" aria-label="Grind Loop Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Grind Loop Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/eddiedunn/claude-code-agent" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    eddiedunn/claude-code-agent
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/using-with-claude-code/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using with Claude Code
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/model-selection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/decompose/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Task Decomposition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TUI - Agent Orchestration
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TUI - Agent Orchestration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#experimental-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚠️ Experimental Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-is-an-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is an Agent?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Requirements
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick Start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#launch-tui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Launch TUI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#first-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        First Steps
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-works-today" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Works Today
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What Works Today">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#interactive-shell-12-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Interactive Shell (12 Commands)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tab-navigation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Tab Navigation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#command-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Command Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-file-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Task File Loading
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planned-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Planned Features
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Planned Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#real-time-agent-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⏳ Real-Time Agent Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-visualization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⏳ DAG Visualization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#live-log-streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⏳ Live Log Streaming
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#progress-tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⏳ Progress Tracking
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interface-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interface Guide
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interface Guide">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tab-navigation_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tab Navigation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agents-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agents Tab
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG Tab
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running Tab
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#completed-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Completed Tab
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logs-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logs Tab
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shell-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shell Tab
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shell-commands-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shell Commands Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Shell Commands Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#help" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        help
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agents
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        logs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        run
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spawn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        spawn
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cancel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cancel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pause" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pause
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resume" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        resume
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clear" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        clear
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        history
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shell-escape" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shell Escape
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#known-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known Limitations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Known Limitations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tab-1-agents-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tab 1 (Agents Overview)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tab-2-dag-visualization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tab 2 (DAG Visualization)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tab-3-running-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tab 3 (Running Agents)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tab-4-completed-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tab 4 (Completed Agents)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tab-5-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tab 5 (Logs)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tab-6-shell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tab 6 (Shell) ✅
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-you-can-do-today" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What You Can Do Today
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keyboard-shortcuts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keyboard Shortcuts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Keyboard Shortcuts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#global-shortcuts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global Shortcuts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shell-tab-shortcuts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shell Tab Shortcuts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#navigation-tips" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Navigation Tips
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#log-output-location" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Log Output Location
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#max-parallel-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Max Parallel Agents
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#component-relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Component Relationships
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reactive-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reactive Pattern
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration-with-grind-engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration with Grind Engine
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tui-wont-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TUI won't start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agents-not-showing-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agents not showing up
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logs-not-streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logs not streaming
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shell-commands-not-working" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shell commands not working
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#high-cpu-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High CPU usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#display-corruption" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Display corruption
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debug-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debug Logging
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-event-loop-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Async Event Loop Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#monitoring-long-running-tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring Long-Running Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parallel-task-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parallel Task Execution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-shell-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Shell Workflows
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feedback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feedback
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/dag-execution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DAG Execution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/git-worktrees/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git Worktrees
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/slash-commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Slash Commands
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/orchestration-vision/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Orchestration Vision
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SDK Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    SDK Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/python-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/typescript-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TypeScript SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_4" id="__nav_5_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/streaming-input/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming Input
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/handling-permissions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Handling Permissions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/session-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/structured-outputs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structured Outputs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/hosting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hosting the Agent SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/modifying-system-prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Modifying System Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP in the SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/custom-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Tools
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/subagents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Subagents in the SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/slash-commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Slash Commands in the SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/agent-skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent Skills in the SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/tracking-costs-and-usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tracking Costs and Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/todo-lists/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Todo Lists
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugins in the SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sdk/claude_max_workaround/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Claude Max Workaround
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#experimental-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⚠️ Experimental Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-is-an-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is an Agent?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Requirements
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick Start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#launch-tui" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Launch TUI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#first-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        First Steps
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-works-today" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Works Today
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What Works Today">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#interactive-shell-12-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Interactive Shell (12 Commands)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tab-navigation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Tab Navigation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#command-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Command Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task-file-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ✅ Task File Loading
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planned-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Planned Features
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Planned Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#real-time-agent-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⏳ Real-Time Agent Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-visualization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⏳ DAG Visualization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#live-log-streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⏳ Live Log Streaming
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#progress-tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ⏳ Progress Tracking
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interface-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interface Guide
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interface Guide">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tab-navigation_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tab Navigation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agents-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agents Tab
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dag-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DAG Tab
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running Tab
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#completed-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Completed Tab
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logs-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logs Tab
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shell-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shell Tab
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shell-commands-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shell Commands Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Shell Commands Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#help" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        help
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agents
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        logs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        run
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#spawn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        spawn
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cancel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cancel
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pause" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pause
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resume" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        resume
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clear" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        clear
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        history
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shell-escape" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shell Escape
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#known-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known Limitations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Known Limitations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tab-1-agents-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tab 1 (Agents Overview)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tab-2-dag-visualization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tab 2 (DAG Visualization)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tab-3-running-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tab 3 (Running Agents)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tab-4-completed-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tab 4 (Completed Agents)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tab-5-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tab 5 (Logs)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tab-6-shell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tab 6 (Shell) ✅
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-you-can-do-today" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What You Can Do Today
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keyboard-shortcuts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keyboard Shortcuts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Keyboard Shortcuts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#global-shortcuts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global Shortcuts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shell-tab-shortcuts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shell Tab Shortcuts
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#navigation-tips" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Navigation Tips
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#default-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Default Model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#log-output-location" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Log Output Location
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#max-parallel-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Max Parallel Agents
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#component-relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Component Relationships
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reactive-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reactive Pattern
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration-with-grind-engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration with Grind Engine
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tui-wont-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TUI won't start
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agents-not-showing-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agents not showing up
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logs-not-streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logs not streaming
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shell-commands-not-working" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shell commands not working
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#high-cpu-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High CPU usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#display-corruption" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Display corruption
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debug-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debug Logging
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#async-event-loop-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Async Event Loop Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#monitoring-long-running-tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring Long-Running Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parallel-task-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parallel Task Execution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-shell-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Shell Workflows
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feedback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feedback
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="tui-agent-orchestration-interface">TUI - Agent Orchestration Interface<a class="headerlink" href="#tui-agent-orchestration-interface" title="Permanent link">&para;</a></h1>
+<p>The Grind TUI (Terminal User Interface) provides a portable, interactive interface for orchestrating and monitoring Claude AI agents in real-time.</p>
+<h2 id="experimental-status">⚠️ Experimental Status<a class="headerlink" href="#experimental-status" title="Permanent link">&para;</a></h2>
+<p><strong>The TUI is functional but currently in alpha/experimental stage.</strong></p>
+<p><strong>What works today:</strong>
+- ✅ <strong>Interactive shell interface</strong> - Fully functional with 12 commands
+- ✅ <strong>Tab navigation</strong> - All 6 tabs accessible via keyboard shortcuts
+- ✅ <strong>Command execution</strong> - Shell commands, history, and tab completion
+- ✅ <strong>Task loading</strong> - Run batch tasks from YAML files via <code>run</code> command</p>
+<p><strong>What's planned but not yet implemented:</strong>
+- ⏳ <strong>Real-time agent monitoring</strong> - Running/Completed tabs will show live agent status
+- ⏳ <strong>DAG visualization</strong> - Dependency graph rendering in DAG tab
+- ⏳ <strong>Live log streaming</strong> - Real-time log output in Logs tab
+- ⏳ <strong>Progress tracking</strong> - Progress bars and iteration counts</p>
+<p>The shell interface is fully operational and can be used to control the Grind engine. Visual monitoring features are under active development.</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<h3 id="what-is-an-agent">What is an Agent?<a class="headerlink" href="#what-is-an-agent" title="Permanent link">&para;</a></h3>
+<p>In the Grind TUI context, an <strong>agent</strong> refers to a single grind loop execution with metadata tracking:</p>
+<ul>
+<li>Each agent wraps a <code>TaskDefinition</code> execution (task description + verification command)</li>
+<li>The agent runs the fix-verify loop until the task succeeds or max iterations are reached</li>
+<li><code>AgentInfo</code> tracks status, progress, logs, and results for each execution</li>
+<li>This abstraction provides the foundation for future multi-agent orchestration capabilities</li>
+</ul>
+<p><strong>Example:</strong> When you run <code>run tasks.yaml</code> with 3 tasks, the TUI creates 3 agents - one for each task - and manages their parallel/sequential execution based on dependencies.</p>
+<h3 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h3>
+<p>The TUI is designed for:</p>
+<ul>
+<li><strong>Visual Monitoring</strong>: Real-time tracking of agent execution across multiple concurrent tasks (planned)</li>
+<li><strong>Interactive Control</strong>: Start, pause, resume, and cancel agents through a REPL shell</li>
+<li><strong>Log Streaming</strong>: Live log output from running agents with filtering capabilities (planned)</li>
+<li><strong>Task Orchestration</strong>: Launch batch tasks from YAML files and manage dependencies</li>
+</ul>
+<h3 id="key-features">Key Features<a class="headerlink" href="#key-features" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Tabbed Interface</strong>: Six specialized tabs for different aspects of agent management</li>
+<li><strong>Real-time Updates</strong>: Live status updates and progress tracking</li>
+<li><strong>Log Streaming</strong>: Watch agent logs as they execute</li>
+<li><strong>REPL Shell</strong>: Interactive command-line for agent control</li>
+<li><strong>Keyboard Navigation</strong>: Fast tab switching with Ctrl+1 through Ctrl+6</li>
+<li><strong>DAG Visualization</strong>: Dependency graph for complex multi-agent tasks</li>
+</ul>
+<h3 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Python</strong>: 3.11 or higher</li>
+<li><strong>Terminal</strong>: ANSI color support recommended</li>
+<li><strong>Dependencies</strong>: Installed via <code>uv sync</code></li>
+</ul>
+<h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<h3 id="launch-tui">Launch TUI<a class="headerlink" href="#launch-tui" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Basic launch</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uv<span class="w"> </span>run<span class="w"> </span>grind<span class="w"> </span>tui
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Launch with task file</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>uv<span class="w"> </span>run<span class="w"> </span>grind<span class="w"> </span>tui<span class="w"> </span>-t<span class="w"> </span>tasks.yaml
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># Launch with specific model</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>uv<span class="w"> </span>run<span class="w"> </span>grind<span class="w"> </span>tui<span class="w"> </span>-m<span class="w"> </span>opus
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># Launch with verbose logging</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>uv<span class="w"> </span>run<span class="w"> </span>grind<span class="w"> </span>tui<span class="w"> </span>--verbose
+</span></code></pre></div>
+<h3 id="first-steps">First Steps<a class="headerlink" href="#first-steps" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Launch the TUI</strong>: <code>uv run grind tui</code></li>
+<li><strong>Navigate to Shell tab</strong>: Press <code>6</code> or click "Shell"</li>
+<li><strong>Get help</strong>: Type <code>help</code> to see available commands</li>
+<li><strong>Check status</strong>: Type <code>status</code> to see agent overview</li>
+<li><strong>Run tasks</strong>: Use <code>run tasks.yaml</code> to execute a task file</li>
+</ol>
+<h2 id="what-works-today">What Works Today<a class="headerlink" href="#what-works-today" title="Permanent link">&para;</a></h2>
+<p>The TUI shell interface is fully functional with the following capabilities:</p>
+<h3 id="interactive-shell-12-commands">✅ Interactive Shell (12 Commands)<a class="headerlink" href="#interactive-shell-12-commands" title="Permanent link">&para;</a></h3>
+<p>The Shell tab (press <code>6</code>) provides a complete REPL interface:</p>
+<ul>
+<li><strong><code>help</code></strong> - Show available commands and detailed help</li>
+<li><strong><code>status</code></strong> - Display agent status summary</li>
+<li><strong><code>agents</code> / <code>ls</code></strong> - List all agents in the session</li>
+<li><strong><code>agent &lt;id&gt;</code></strong> - Show detailed information about a specific agent</li>
+<li><strong><code>logs &lt;id&gt;</code> / <code>tail &lt;id&gt;</code></strong> - Display recent log output for an agent</li>
+<li><strong><code>run &lt;file&gt;</code></strong> - Start batch execution from a YAML task file</li>
+<li><strong><code>spawn</code></strong> - Create a new agent interactively (partially implemented)</li>
+<li><strong><code>cancel &lt;id&gt;</code></strong> - Cancel a running or pending agent</li>
+<li><strong><code>pause &lt;id&gt;</code></strong> - Pause an agent at the next iteration boundary</li>
+<li><strong><code>resume &lt;id&gt;</code></strong> - Resume a paused agent</li>
+<li><strong><code>clear</code></strong> - Clear the shell output area</li>
+<li><strong><code>history</code></strong> - Show command history for the session</li>
+</ul>
+<h3 id="tab-navigation">✅ Tab Navigation<a class="headerlink" href="#tab-navigation" title="Permanent link">&para;</a></h3>
+<p>All six tabs are accessible and functional for navigation:</p>
+<ul>
+<li><strong>Agents</strong> (<code>1</code>) - Overview placeholder</li>
+<li><strong>DAG</strong> (<code>2</code>) - Dependency graph placeholder</li>
+<li><strong>Running</strong> (<code>3</code>) - Active agents placeholder</li>
+<li><strong>Completed</strong> (<code>4</code>) - Finished agents placeholder</li>
+<li><strong>Logs</strong> (<code>5</code>) - Log streaming placeholder</li>
+<li><strong>Shell</strong> (<code>6</code>) - Fully functional REPL</li>
+</ul>
+<h3 id="command-features">✅ Command Features<a class="headerlink" href="#command-features" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Command history</strong> - Use ↑/↓ arrow keys to navigate previous commands</li>
+<li><strong>Tab completion</strong> - Press Tab to autocomplete command names</li>
+<li><strong>Shell escape</strong> - Prefix commands with <code>!</code> to execute arbitrary bash commands</li>
+<li><strong>Scrollable output</strong> - Review command output in the shell area</li>
+</ul>
+<h3 id="task-file-loading">✅ Task File Loading<a class="headerlink" href="#task-file-loading" title="Permanent link">&para;</a></h3>
+<p>The <code>run</code> command loads and executes YAML task files:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># In the Shell tab</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>run<span class="w"> </span>tasks.yaml
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>run<span class="w"> </span>examples/test-suite.yaml
+</span></code></pre></div>
+<p>This creates agents for each task and manages their execution based on dependencies.</p>
+<h2 id="planned-features">Planned Features<a class="headerlink" href="#planned-features" title="Permanent link">&para;</a></h2>
+<p>The following features are designed but not yet implemented:</p>
+<h3 id="real-time-agent-monitoring">⏳ Real-Time Agent Monitoring<a class="headerlink" href="#real-time-agent-monitoring" title="Permanent link">&para;</a></h3>
+<p><strong>Running Tab:</strong>
+- Live list of actively executing agents
+- Current iteration and progress percentage
+- Duration and elapsed time
+- Status updates as agents progress</p>
+<p><strong>Completed Tab:</strong>
+- Historical record of finished agents
+- Success/failure status with error messages
+- Total duration and iteration counts
+- Performance metrics</p>
+<h3 id="dag-visualization">⏳ DAG Visualization<a class="headerlink" href="#dag-visualization" title="Permanent link">&para;</a></h3>
+<p><strong>DAG Tab:</strong>
+- Visual representation of task dependencies
+- Execution flow from dependencies to dependent tasks
+- Current status of each node in the graph
+- Interactive navigation</p>
+<h3 id="live-log-streaming">⏳ Live Log Streaming<a class="headerlink" href="#live-log-streaming" title="Permanent link">&para;</a></h3>
+<p><strong>Logs Tab:</strong>
+- Real-time streaming of agent log output
+- Timestamps for each entry
+- Filtering by specific agent ID
+- Auto-scroll and search capabilities</p>
+<h3 id="progress-tracking">⏳ Progress Tracking<a class="headerlink" href="#progress-tracking" title="Permanent link">&para;</a></h3>
+<p><strong>Status Display:</strong>
+- Progress bars for running agents
+- Iteration counts (current/max)
+- Time estimates for completion
+- Resource usage metrics</p>
+<h2 id="interface-guide">Interface Guide<a class="headerlink" href="#interface-guide" title="Permanent link">&para;</a></h2>
+<h3 id="tab-navigation_1">Tab Navigation<a class="headerlink" href="#tab-navigation_1" title="Permanent link">&para;</a></h3>
+<p>The TUI provides six specialized tabs, accessible via keyboard shortcuts:</p>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>Shortcut</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Agents</td>
+<td><code>Ctrl+1</code> or <code>1</code></td>
+<td>Overview of all agents in the session</td>
+</tr>
+<tr>
+<td>DAG</td>
+<td><code>Ctrl+2</code> or <code>2</code></td>
+<td>Dependency graph visualization</td>
+</tr>
+<tr>
+<td>Running</td>
+<td><code>Ctrl+3</code> or <code>3</code></td>
+<td>Monitor actively executing agents</td>
+</tr>
+<tr>
+<td>Completed</td>
+<td><code>Ctrl+4</code> or <code>4</code></td>
+<td>View finished agents and results</td>
+</tr>
+<tr>
+<td>Logs</td>
+<td><code>Ctrl+5</code> or <code>5</code></td>
+<td>Real-time log streaming from agents</td>
+</tr>
+<tr>
+<td>Shell</td>
+<td><code>Ctrl+6</code> or <code>6</code></td>
+<td>REPL for orchestration commands</td>
+</tr>
+</tbody>
+</table>
+<h3 id="agents-tab">Agents Tab<a class="headerlink" href="#agents-tab" title="Permanent link">&para;</a></h3>
+<p>The Agents tab provides a high-level overview of all agents in the current session.</p>
+<p><strong>What you'll see:</strong>
+- Total agent count
+- Status breakdown (pending, running, completed, failed)
+- Quick reference to shell commands</p>
+<p><strong>Use cases:</strong>
+- Get a quick snapshot of session state
+- Understand how many agents are active
+- Identify if any agents need attention</p>
+<h3 id="dag-tab">DAG Tab<a class="headerlink" href="#dag-tab" title="Permanent link">&para;</a></h3>
+<p>The DAG (Directed Acyclic Graph) tab visualizes task dependencies when running batch tasks from a YAML file.</p>
+<p><strong>What you'll see:</strong>
+- Visual representation of task relationships
+- Execution flow from dependencies to dependent tasks
+- Current status of each node in the graph</p>
+<p><strong>Use cases:</strong>
+- Understand task execution order
+- Debug dependency issues
+- Plan complex multi-task workflows</p>
+<h3 id="running-tab">Running Tab<a class="headerlink" href="#running-tab" title="Permanent link">&para;</a></h3>
+<p>The Running tab shows detailed information about currently executing agents.</p>
+<p><strong>What you'll see:</strong>
+- List of active agents
+- Current iteration and progress percentage
+- Duration and elapsed time
+- Live status updates</p>
+<p><strong>Use cases:</strong>
+- Monitor long-running tasks
+- Identify stuck or slow agents
+- Track progress toward completion</p>
+<h3 id="completed-tab">Completed Tab<a class="headerlink" href="#completed-tab" title="Permanent link">&para;</a></h3>
+<p>The Completed tab displays a historical record of finished agents.</p>
+<p><strong>What you'll see:</strong>
+- Tabular view of all completed agents
+- Success/failure status
+- Total duration and iterations used
+- Error messages for failed agents</p>
+<p><strong>Use cases:</strong>
+- Review task history
+- Debug failures
+- Analyze performance metrics</p>
+<h3 id="logs-tab">Logs Tab<a class="headerlink" href="#logs-tab" title="Permanent link">&para;</a></h3>
+<p>The Logs tab provides real-time streaming of agent log output.</p>
+<p><strong>What you'll see:</strong>
+- Live log lines as agents execute
+- Timestamps for each entry
+- Filtered view for specific agents</p>
+<p><strong>Use cases:</strong>
+- Debug agent behavior
+- Monitor verification command output
+- Watch fix attempts in real-time</p>
+<h3 id="shell-tab">Shell Tab<a class="headerlink" href="#shell-tab" title="Permanent link">&para;</a></h3>
+<p>The Shell tab is an interactive REPL for controlling the orchestration system.</p>
+<p><strong>What you'll see:</strong>
+- Command prompt (<code>grind&gt;</code>)
+- Scrollable output area
+- Command history and tab completion</p>
+<p><strong>Use cases:</strong>
+- Execute orchestration commands
+- Query agent status
+- Control agent lifecycle (start, pause, cancel)
+- Run shell commands with <code>!</code> prefix</p>
+<h2 id="shell-commands-reference">Shell Commands Reference<a class="headerlink" href="#shell-commands-reference" title="Permanent link">&para;</a></h2>
+<h3 id="help">help<a class="headerlink" href="#help" title="Permanent link">&para;</a></h3>
+<p>Show available commands or detailed help for a specific command.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># List all commands</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">help</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Get help for a specific command</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nb">help</span><span class="w"> </span>agents
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nb">help</span><span class="w"> </span>spawn
+</span></code></pre></div>
+<h3 id="status">status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h3>
+<p>Display a summary of agent status across the session.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>status
+</span></code></pre></div>
+<p><strong>Output:</strong>
+- Count of agents by status (pending, running, paused, completed, failed)
+- Total agent count
+- Current agent ID (if any)</p>
+<h3 id="agents">agents<a class="headerlink" href="#agents" title="Permanent link">&para;</a></h3>
+<p>List all agents in the current session.</p>
+<p><strong>Aliases:</strong> <code>ls</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># List all agents</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>agents
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Using alias</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>ls
+</span></code></pre></div>
+<p><strong>Output format:</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>ID                    Status       Type         Progress  Duration
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>----------------------------------------------------------------------
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>agent-abc123          running      grind        45%       00:02:15
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>agent-def456          completed    grind        100%      00:01:30
+</span></code></pre></div></p>
+<h3 id="agent">agent<a class="headerlink" href="#agent" title="Permanent link">&para;</a></h3>
+<p>Show detailed information about a specific agent.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>agent<span class="w"> </span>&lt;agent-id&gt;
+</span></code></pre></div>
+<p><strong>Example:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>agent<span class="w"> </span>agent-abc123
+</span></code></pre></div></p>
+<p><strong>Output includes:</strong>
+- Task ID and description
+- Agent type and model
+- Status and iteration count
+- Progress percentage
+- Duration and timestamps
+- Log file location
+- Error messages (if any)</p>
+<h3 id="logs">logs<a class="headerlink" href="#logs" title="Permanent link">&para;</a></h3>
+<p>Display recent log output for a specific agent.</p>
+<p><strong>Aliases:</strong> <code>tail</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Show last 20 lines (default)</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>logs<span class="w"> </span>&lt;agent-id&gt;
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># Show last N lines</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>logs<span class="w"> </span>&lt;agent-id&gt;<span class="w"> </span><span class="m">50</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># Using alias</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>tail<span class="w"> </span>&lt;agent-id&gt;
+</span></code></pre></div>
+<p><strong>Example:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>logs<span class="w"> </span>agent-abc123
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>tail<span class="w"> </span>agent-abc123<span class="w"> </span><span class="m">100</span>
+</span></code></pre></div></p>
+<h3 id="run">run<a class="headerlink" href="#run" title="Permanent link">&para;</a></h3>
+<p>Start batch execution from a task file.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>run<span class="w"> </span>&lt;task-file.yaml&gt;
+</span></code></pre></div>
+<p><strong>Example:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>run<span class="w"> </span>tasks.yaml
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>run<span class="w"> </span>examples/test-suite.yaml
+</span></code></pre></div></p>
+<h3 id="spawn">spawn<a class="headerlink" href="#spawn" title="Permanent link">&para;</a></h3>
+<p>Create a new agent interactively (not yet fully implemented).</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>spawn
+</span></code></pre></div>
+<p><strong>Future capabilities:</strong>
+- Prompt for task description
+- Select model (haiku/sonnet/opus)
+- Configure verification command
+- Set max iterations</p>
+<h3 id="cancel">cancel<a class="headerlink" href="#cancel" title="Permanent link">&para;</a></h3>
+<p>Cancel a running or pending agent.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>cancel<span class="w"> </span>&lt;agent-id&gt;
+</span></code></pre></div>
+<p><strong>Example:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>cancel<span class="w"> </span>agent-abc123
+</span></code></pre></div></p>
+<p><strong>Notes:</strong>
+- Only works on agents with status: pending, running, or paused
+- Cancellation is graceful (waits for current iteration)</p>
+<h3 id="pause">pause<a class="headerlink" href="#pause" title="Permanent link">&para;</a></h3>
+<p>Request a pause at the next iteration boundary.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>pause<span class="w"> </span>&lt;agent-id&gt;
+</span></code></pre></div>
+<p><strong>Example:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>pause<span class="w"> </span>agent-abc123
+</span></code></pre></div></p>
+<p><strong>Notes:</strong>
+- Agent will pause after completing current iteration
+- Use <code>resume</code> to continue execution</p>
+<h3 id="resume">resume<a class="headerlink" href="#resume" title="Permanent link">&para;</a></h3>
+<p>Resume a paused agent.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>resume<span class="w"> </span>&lt;agent-id&gt;
+</span></code></pre></div>
+<p><strong>Example:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>resume<span class="w"> </span>agent-abc123
+</span></code></pre></div></p>
+<h3 id="clear">clear<a class="headerlink" href="#clear" title="Permanent link">&para;</a></h3>
+<p>Clear the shell output area.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>clear
+</span></code></pre></div>
+<h3 id="history">history<a class="headerlink" href="#history" title="Permanent link">&para;</a></h3>
+<p>Show command history for the current session.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nb">history</span>
+</span></code></pre></div>
+<p><strong>Output format:</strong>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>   1  help
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>   2  status
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>   3  agents
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>   4  run tasks.yaml
+</span></code></pre></div></p>
+<h3 id="shell-escape">Shell Escape<a class="headerlink" href="#shell-escape" title="Permanent link">&para;</a></h3>
+<p>Execute arbitrary shell commands by prefixing with <code>!</code>.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># Run any shell command</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>!ls<span class="w"> </span>-la
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>!git<span class="w"> </span>status
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>!pytest<span class="w"> </span>tests/
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>!ruff<span class="w"> </span>check<span class="w"> </span>.
+</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>
+</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="c1"># Examples</span>
+</span><span id="__span-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a>!cat<span class="w"> </span>/tmp/agent-logs/agent-abc123.log
+</span><span id="__span-22-9"><a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a>!grep<span class="w"> </span><span class="s2">&quot;ERROR&quot;</span><span class="w"> </span>logs/*.log
+</span></code></pre></div>
+<p><strong>Notes:</strong>
+- Commands timeout after 30 seconds
+- Exit codes are displayed
+- Use caution with destructive commands</p>
+<h2 id="known-limitations">Known Limitations<a class="headerlink" href="#known-limitations" title="Permanent link">&para;</a></h2>
+<p>The TUI is under active development. Current limitations:</p>
+<h3 id="tab-1-agents-overview">Tab 1 (Agents Overview)<a class="headerlink" href="#tab-1-agents-overview" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Shows placeholder text only</li>
+<li>Real-time agent list not yet implemented</li>
+<li>Planned: Live grid of all agents with status/progress</li>
+</ul>
+<h3 id="tab-2-dag-visualization">Tab 2 (DAG Visualization)<a class="headerlink" href="#tab-2-dag-visualization" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Shows placeholder text only</li>
+<li>DAG rendering not yet implemented</li>
+<li>Planned: Visual dependency graph with execution flow</li>
+</ul>
+<h3 id="tab-3-running-agents">Tab 3 (Running Agents)<a class="headerlink" href="#tab-3-running-agents" title="Permanent link">&para;</a></h3>
+<ul>
+<li>ListView widget exists but not populated</li>
+<li>Real-time updates not wired</li>
+<li>Planned: Live list with progress bars</li>
+</ul>
+<h3 id="tab-4-completed-agents">Tab 4 (Completed Agents)<a class="headerlink" href="#tab-4-completed-agents" title="Permanent link">&para;</a></h3>
+<ul>
+<li>DataTable widget exists but not populated</li>
+<li>Historical data not tracked</li>
+<li>Planned: Searchable history with filters</li>
+</ul>
+<h3 id="tab-5-logs">Tab 5 (Logs)<a class="headerlink" href="#tab-5-logs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>StreamingLogViewer widget exists</li>
+<li>Log streaming not fully wired</li>
+<li>Planned: Real-time log tailing with search/filter</li>
+</ul>
+<h3 id="tab-6-shell">Tab 6 (Shell) ✅<a class="headerlink" href="#tab-6-shell" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Fully functional</strong> - all features work</li>
+<li>12 commands implemented and tested</li>
+<li>Command history and completion working</li>
+</ul>
+<h3 id="what-you-can-do-today">What You Can Do Today<a class="headerlink" href="#what-you-can-do-today" title="Permanent link">&para;</a></h3>
+<p>Use the Shell tab (press 6) to:
+- Run batch task files: <code>run tasks.yaml</code>
+- Create agents interactively: <code>spawn</code>
+- Check status: <code>status</code>, <code>agents</code>
+- View logs: <code>logs &lt;agent-id&gt;</code>
+- Execute bash: <code>!ls -la</code></p>
+<p>The shell provides full orchestration control even though
+the monitoring tabs are still in development.</p>
+<h2 id="keyboard-shortcuts">Keyboard Shortcuts<a class="headerlink" href="#keyboard-shortcuts" title="Permanent link">&para;</a></h2>
+<h3 id="global-shortcuts">Global Shortcuts<a class="headerlink" href="#global-shortcuts" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>1</code></td>
+<td>Switch to Agents</td>
+<td>Overview tab</td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td>Switch to DAG</td>
+<td>Dependency graph</td>
+</tr>
+<tr>
+<td><code>3</code></td>
+<td>Switch to Running</td>
+<td>Active agents</td>
+</tr>
+<tr>
+<td><code>4</code></td>
+<td>Switch to Completed</td>
+<td>Finished agents</td>
+</tr>
+<tr>
+<td><code>5</code></td>
+<td>Switch to Logs</td>
+<td>Log streaming</td>
+</tr>
+<tr>
+<td><code>6</code></td>
+<td>Switch to Shell</td>
+<td>REPL interface</td>
+</tr>
+<tr>
+<td><code>q</code></td>
+<td>Quit</td>
+<td>Exit the TUI</td>
+</tr>
+</tbody>
+</table>
+<h3 id="shell-tab-shortcuts">Shell Tab Shortcuts<a class="headerlink" href="#shell-tab-shortcuts" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>↑</code></td>
+<td>Previous command</td>
+<td>Navigate command history backward</td>
+</tr>
+<tr>
+<td><code>↓</code></td>
+<td>Next command</td>
+<td>Navigate command history forward</td>
+</tr>
+<tr>
+<td><code>Tab</code></td>
+<td>Autocomplete</td>
+<td>Complete command names</td>
+</tr>
+<tr>
+<td><code>Ctrl+C</code></td>
+<td>Cancel/Clear</td>
+<td>Clear input or interrupt</td>
+</tr>
+<tr>
+<td><code>Esc</code></td>
+<td>Hide completions</td>
+<td>Dismiss completion popup</td>
+</tr>
+<tr>
+<td><code>Enter</code></td>
+<td>Submit command</td>
+<td>Execute the current command</td>
+</tr>
+</tbody>
+</table>
+<h3 id="navigation-tips">Navigation Tips<a class="headerlink" href="#navigation-tips" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Use number keys (<code>1</code>-<code>6</code>) for instant tab switching</li>
+<li>Arrow keys for command history in Shell tab</li>
+<li>Tab completion works for all command names and aliases</li>
+<li><code>Ctrl+C</code> in Shell clears input without exiting</li>
+</ul>
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<h3 id="default-model">Default Model<a class="headerlink" href="#default-model" title="Permanent link">&para;</a></h3>
+<p>Set the default model for new agents:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="c1"># Launch with specific model</span>
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>uv<span class="w"> </span>run<span class="w"> </span>grind<span class="w"> </span>tui<span class="w"> </span>-m<span class="w"> </span>opus
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>uv<span class="w"> </span>run<span class="w"> </span>grind<span class="w"> </span>tui<span class="w"> </span>-m<span class="w"> </span>sonnet
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>uv<span class="w"> </span>run<span class="w"> </span>grind<span class="w"> </span>tui<span class="w"> </span>-m<span class="w"> </span>haiku
+</span></code></pre></div>
+<p><strong>Cost vs Quality trade-offs:</strong>
+- <strong>haiku</strong>: Fast and cheap, good for simple tasks
+- <strong>sonnet</strong>: Balanced performance (default)
+- <strong>opus</strong>: Highest quality for complex problems</p>
+<h3 id="log-output-location">Log Output Location<a class="headerlink" href="#log-output-location" title="Permanent link">&para;</a></h3>
+<p>Agent logs are stored in:
+<div class="language-text highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>/tmp/agent-logs/&lt;agent-id&gt;.log
+</span></code></pre></div></p>
+<p>View logs:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># In Shell tab</span>
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>logs<span class="w"> </span>&lt;agent-id&gt;
+</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>
+</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="c1"># Or use shell escape</span>
+</span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>!cat<span class="w"> </span>/tmp/agent-logs/&lt;agent-id&gt;.log
+</span><span id="__span-25-6"><a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>!tail<span class="w"> </span>-f<span class="w"> </span>/tmp/agent-logs/&lt;agent-id&gt;.log
+</span></code></pre></div></p>
+<h3 id="max-parallel-agents">Max Parallel Agents<a class="headerlink" href="#max-parallel-agents" title="Permanent link">&para;</a></h3>
+<p>Currently, parallelism is controlled by the task file:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="nt">tasks</span><span class="p">:</span>
+</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Task</span><span class="nv"> </span><span class="s">1&quot;</span>
+</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="w">    </span><span class="nt">verify</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;pytest</span><span class="nv"> </span><span class="s">test1.py&quot;</span>
+</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="w">    </span><span class="nt">dependencies</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>
+</span><span id="__span-26-6"><a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Task</span><span class="nv"> </span><span class="s">2&quot;</span>
+</span><span id="__span-26-7"><a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a><span class="w">    </span><span class="nt">verify</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;pytest</span><span class="nv"> </span><span class="s">test2.py&quot;</span>
+</span><span id="__span-26-8"><a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a><span class="w">    </span><span class="nt">dependencies</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span><span class="w">  </span><span class="c1"># Runs in parallel with Task 1</span>
+</span><span id="__span-26-9"><a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a>
+</span><span id="__span-26-10"><a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Task</span><span class="nv"> </span><span class="s">3&quot;</span>
+</span><span id="__span-26-11"><a id="__codelineno-26-11" name="__codelineno-26-11" href="#__codelineno-26-11"></a><span class="w">    </span><span class="nt">verify</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;pytest</span><span class="nv"> </span><span class="s">test3.py&quot;</span>
+</span><span id="__span-26-12"><a id="__codelineno-26-12" name="__codelineno-26-12" href="#__codelineno-26-12"></a><span class="w">    </span><span class="nt">dependencies</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;Task</span><span class="nv"> </span><span class="s">1&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;Task</span><span class="nv"> </span><span class="s">2&quot;</span><span class="p p-Indicator">]</span><span class="w">  </span><span class="c1"># Waits for both</span>
+</span></code></pre></div>
+<p><strong>Future:</strong> Global max_parallel setting planned.</p>
+<h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
+<h3 id="component-relationships">Component Relationships<a class="headerlink" href="#component-relationships" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>graph TB
+</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>    App[AgentTUI App]
+</span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>    Session[AgentSession]
+</span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>    Executor[AgentExecutor]
+</span><span id="__span-27-5"><a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>    LogStreamer[AgentLogStreamer]
+</span><span id="__span-27-6"><a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>    TabRegistry[TabRegistry]
+</span><span id="__span-27-7"><a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>
+</span><span id="__span-27-8"><a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a>    App --&gt; Session
+</span><span id="__span-27-9"><a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a>    App --&gt; Executor
+</span><span id="__span-27-10"><a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a>    App --&gt; LogStreamer
+</span><span id="__span-27-11"><a id="__codelineno-27-11" name="__codelineno-27-11" href="#__codelineno-27-11"></a>    App --&gt; TabRegistry
+</span><span id="__span-27-12"><a id="__codelineno-27-12" name="__codelineno-27-12" href="#__codelineno-27-12"></a>
+</span><span id="__span-27-13"><a id="__codelineno-27-13" name="__codelineno-27-13" href="#__codelineno-27-13"></a>    Executor --&gt; Session
+</span><span id="__span-27-14"><a id="__codelineno-27-14" name="__codelineno-27-14" href="#__codelineno-27-14"></a>    Executor --&gt; Engine[Grind Engine]
+</span><span id="__span-27-15"><a id="__codelineno-27-15" name="__codelineno-27-15" href="#__codelineno-27-15"></a>
+</span><span id="__span-27-16"><a id="__codelineno-27-16" name="__codelineno-27-16" href="#__codelineno-27-16"></a>    Tabs[Tab Widgets]
+</span><span id="__span-27-17"><a id="__codelineno-27-17" name="__codelineno-27-17" href="#__codelineno-27-17"></a>    Shell[Shell Widget]
+</span><span id="__span-27-18"><a id="__codelineno-27-18" name="__codelineno-27-18" href="#__codelineno-27-18"></a>    Running[Running Manager]
+</span><span id="__span-27-19"><a id="__codelineno-27-19" name="__codelineno-27-19" href="#__codelineno-27-19"></a>    Completed[Completed Manager]
+</span><span id="__span-27-20"><a id="__codelineno-27-20" name="__codelineno-27-20" href="#__codelineno-27-20"></a>    LogViewer[Log Viewer]
+</span><span id="__span-27-21"><a id="__codelineno-27-21" name="__codelineno-27-21" href="#__codelineno-27-21"></a>
+</span><span id="__span-27-22"><a id="__codelineno-27-22" name="__codelineno-27-22" href="#__codelineno-27-22"></a>    App --&gt; Tabs
+</span><span id="__span-27-23"><a id="__codelineno-27-23" name="__codelineno-27-23" href="#__codelineno-27-23"></a>    Tabs --&gt; Shell
+</span><span id="__span-27-24"><a id="__codelineno-27-24" name="__codelineno-27-24" href="#__codelineno-27-24"></a>    Tabs --&gt; Running
+</span><span id="__span-27-25"><a id="__codelineno-27-25" name="__codelineno-27-25" href="#__codelineno-27-25"></a>    Tabs --&gt; Completed
+</span><span id="__span-27-26"><a id="__codelineno-27-26" name="__codelineno-27-26" href="#__codelineno-27-26"></a>    Tabs --&gt; LogViewer
+</span><span id="__span-27-27"><a id="__codelineno-27-27" name="__codelineno-27-27" href="#__codelineno-27-27"></a>
+</span><span id="__span-27-28"><a id="__codelineno-27-28" name="__codelineno-27-28" href="#__codelineno-27-28"></a>    Shell --&gt; CommandRegistry[Command Registry]
+</span><span id="__span-27-29"><a id="__codelineno-27-29" name="__codelineno-27-29" href="#__codelineno-27-29"></a>    CommandRegistry --&gt; Commands[Shell Commands]
+</span><span id="__span-27-30"><a id="__codelineno-27-30" name="__codelineno-27-30" href="#__codelineno-27-30"></a>
+</span><span id="__span-27-31"><a id="__codelineno-27-31" name="__codelineno-27-31" href="#__codelineno-27-31"></a>    Executor -.callback.-&gt; Running
+</span><span id="__span-27-32"><a id="__codelineno-27-32" name="__codelineno-27-32" href="#__codelineno-27-32"></a>    Executor -.callback.-&gt; Completed
+</span><span id="__span-27-33"><a id="__codelineno-27-33" name="__codelineno-27-33" href="#__codelineno-27-33"></a>    Executor -.callback.-&gt; LogViewer
+</span><span id="__span-27-34"><a id="__codelineno-27-34" name="__codelineno-27-34" href="#__codelineno-27-34"></a>
+</span><span id="__span-27-35"><a id="__codelineno-27-35" name="__codelineno-27-35" href="#__codelineno-27-35"></a>    Engine --&gt; AgentSDK[Claude Agent SDK]
+</span><span id="__span-27-36"><a id="__codelineno-27-36" name="__codelineno-27-36" href="#__codelineno-27-36"></a>
+</span><span id="__span-27-37"><a id="__codelineno-27-37" name="__codelineno-27-37" href="#__codelineno-27-37"></a>    style App fill:#4a86e8
+</span><span id="__span-27-38"><a id="__codelineno-27-38" name="__codelineno-27-38" href="#__codelineno-27-38"></a>    style Engine fill:#e06666
+</span><span id="__span-27-39"><a id="__codelineno-27-39" name="__codelineno-27-39" href="#__codelineno-27-39"></a>    style AgentSDK fill:#93c47d
+</span></code></pre></div>
+<h3 id="reactive-pattern">Reactive Pattern<a class="headerlink" href="#reactive-pattern" title="Permanent link">&para;</a></h3>
+<p>The TUI uses a <strong>callback-based reactive pattern</strong> for real-time updates:</p>
+<ol>
+<li><strong>AgentExecutor</strong> runs agents asynchronously via the Grind engine</li>
+<li><strong>Callbacks</strong> fire on status changes and log events</li>
+<li><strong>Widgets</strong> receive callbacks and update their display</li>
+<li><strong>Textual framework</strong> handles efficient terminal rendering</li>
+</ol>
+<p><strong>Key benefits:</strong>
+- No polling required
+- Instant UI updates
+- Low CPU overhead
+- Scalable to many concurrent agents</p>
+<h3 id="integration-with-grind-engine">Integration with Grind Engine<a class="headerlink" href="#integration-with-grind-engine" title="Permanent link">&para;</a></h3>
+<p>The TUI is a <strong>thin orchestration layer</strong> over the core Grind engine:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="c1"># Core components</span>
+</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="n">session</span> <span class="o">=</span> <span class="n">AgentSession</span><span class="p">()</span>      <span class="c1"># Tracks all agents</span>
+</span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="n">executor</span> <span class="o">=</span> <span class="n">AgentExecutor</span><span class="p">()</span>     <span class="c1"># Runs agents via Grind</span>
+</span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="n">log_streamer</span> <span class="o">=</span> <span class="n">AgentLogStreamer</span><span class="p">()</span>  <span class="c1"># Streams logs</span>
+</span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>
+</span><span id="__span-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a><span class="c1"># Execution flow</span>
+</span><span id="__span-28-7"><a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="n">executor</span><span class="o">.</span><span class="n">run_agent</span><span class="p">(</span><span class="n">task</span><span class="p">)</span> <span class="err">→</span> <span class="n">grind</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">run</span><span class="p">()</span> <span class="err">→</span> <span class="n">Claude</span> <span class="n">Agent</span> <span class="n">SDK</span>
+</span></code></pre></div>
+<p><strong>Separation of concerns:</strong>
+- <strong>TUI</strong>: User interface, monitoring, control
+- <strong>Grind Engine</strong>: Fix-verify loop logic
+- <strong>Agent SDK</strong>: Claude API integration</p>
+<p>This design allows the same tasks to run via CLI or TUI interchangeably.</p>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="tui-wont-start">TUI won't start<a class="headerlink" href="#tui-wont-start" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom:</strong> Error on launch or blank screen</p>
+<p><strong>Solutions:</strong>
+1. Check Python version: <code>python --version</code> (need 3.11+)
+2. Reinstall dependencies: <code>uv sync</code>
+3. Check terminal compatibility: Ensure ANSI support
+4. Try verbose mode: <code>uv run grind tui --verbose</code></p>
+<h3 id="agents-not-showing-up">Agents not showing up<a class="headerlink" href="#agents-not-showing-up" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom:</strong> Spawned agents don't appear in tabs</p>
+<p><strong>Solutions:</strong>
+1. Check Shell tab for error messages
+2. Verify task file syntax: <code>uv run grind validate tasks.yaml</code>
+3. Switch to Running tab (press <code>3</code>)
+4. Use <code>agents</code> command in Shell to list all agents</p>
+<h3 id="logs-not-streaming">Logs not streaming<a class="headerlink" href="#logs-not-streaming" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom:</strong> Logs tab is empty or not updating</p>
+<p><strong>Solutions:</strong>
+1. Verify agent is running: <code>status</code> in Shell tab
+2. Check log file exists: <code>!ls /tmp/agent-logs/</code> in Shell
+3. Use <code>logs &lt;agent-id&gt;</code> command directly
+4. Switch away and back to Logs tab to refresh</p>
+<h3 id="shell-commands-not-working">Shell commands not working<a class="headerlink" href="#shell-commands-not-working" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom:</strong> Commands return errors or "not found"</p>
+<p><strong>Solutions:</strong>
+1. Type <code>help</code> to see available commands
+2. Check command syntax: <code>help &lt;command&gt;</code>
+3. Ensure you're in Shell tab (press <code>6</code>)
+4. For shell escapes, use <code>!</code> prefix: <code>!ls</code> not <code>ls</code></p>
+<h3 id="high-cpu-usage">High CPU usage<a class="headerlink" href="#high-cpu-usage" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom:</strong> TUI consumes excessive CPU</p>
+<p><strong>Solutions:</strong>
+1. Limit concurrent agents in task file
+2. Close unused tabs
+3. Reduce log verbosity
+4. Use CLI mode for headless operation</p>
+<h3 id="display-corruption">Display corruption<a class="headerlink" href="#display-corruption" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom:</strong> Garbled text or rendering issues</p>
+<p><strong>Solutions:</strong>
+1. Resize terminal window
+2. Press <code>Ctrl+L</code> to force redraw (in some terminals)
+3. Restart the TUI
+4. Update terminal emulator
+5. Check <code>$TERM</code> environment variable</p>
+<h3 id="debug-logging">Debug Logging<a class="headerlink" href="#debug-logging" title="Permanent link">&para;</a></h3>
+<p>Enable verbose logging for troubleshooting:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="c1"># Launch with verbose flag</span>
+</span><span id="__span-29-2"><a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>uv<span class="w"> </span>run<span class="w"> </span>grind<span class="w"> </span>tui<span class="w"> </span>--verbose
+</span><span id="__span-29-3"><a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>
+</span><span id="__span-29-4"><a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a><span class="c1"># Check log output location</span>
+</span><span id="__span-29-5"><a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>!ls<span class="w"> </span>-l<span class="w"> </span>/tmp/agent-logs/
+</span><span id="__span-29-6"><a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>
+</span><span id="__span-29-7"><a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a><span class="c1"># View TUI internal logs (if available)</span>
+</span><span id="__span-29-8"><a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>!cat<span class="w"> </span>/tmp/grind-tui.log
+</span></code></pre></div>
+<h3 id="async-event-loop-issues">Async Event Loop Issues<a class="headerlink" href="#async-event-loop-issues" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom:</strong> TUI hangs or becomes unresponsive, especially during agent execution</p>
+<p><strong>Background:</strong> The TUI runs in an async event loop (Textual framework) and must properly coordinate with the Grind engine's async operations.</p>
+<p><strong>Solution Applied:</strong>
+- The codebase includes fixes for proper async/await handling in agent execution
+- <code>AgentExecutor</code> now correctly manages asyncio tasks and callbacks
+- Event loop coordination between Textual and agent runtime has been improved</p>
+<p><strong>If you still encounter issues:</strong>
+1. Ensure you're running the latest version: <code>git pull &amp;&amp; uv sync</code>
+2. Check for Python version compatibility (3.11+ required)
+3. Report the issue with verbose logs: <code>uv run grind tui --verbose</code></p>
+<h2 id="advanced-usage">Advanced Usage<a class="headerlink" href="#advanced-usage" title="Permanent link">&para;</a></h2>
+<h3 id="monitoring-long-running-tasks">Monitoring Long-Running Tasks<a class="headerlink" href="#monitoring-long-running-tasks" title="Permanent link">&para;</a></h3>
+<p>For tasks that run for hours:</p>
+<ol>
+<li>Launch TUI with task file: <code>uv run grind tui -t long-tasks.yaml</code></li>
+<li>Switch to Running tab (<code>3</code>) to monitor progress</li>
+<li>Use Logs tab (<code>5</code>) to watch detailed output</li>
+<li>Check Completed tab (<code>4</code>) periodically for finished agents</li>
+<li>Use <code>status</code> command for quick overview</li>
+</ol>
+<h3 id="parallel-task-execution">Parallel Task Execution<a class="headerlink" href="#parallel-task-execution" title="Permanent link">&para;</a></h3>
+<p>Structure task files for parallelism:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="nt">tasks</span><span class="p">:</span>
+</span><span id="__span-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="w">  </span><span class="c1"># These run in parallel (no dependencies)</span>
+</span><span id="__span-30-3"><a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Fix</span><span class="nv"> </span><span class="s">linting&quot;</span>
+</span><span id="__span-30-4"><a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="w">    </span><span class="nt">verify</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ruff</span><span class="nv"> </span><span class="s">check</span><span class="nv"> </span><span class="s">.&quot;</span>
+</span><span id="__span-30-5"><a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>
+</span><span id="__span-30-6"><a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Fix</span><span class="nv"> </span><span class="s">type</span><span class="nv"> </span><span class="s">errors&quot;</span>
+</span><span id="__span-30-7"><a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a><span class="w">    </span><span class="nt">verify</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mypy</span><span class="nv"> </span><span class="s">.&quot;</span>
+</span><span id="__span-30-8"><a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>
+</span><span id="__span-30-9"><a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Fix</span><span class="nv"> </span><span class="s">test</span><span class="nv"> </span><span class="s">failures&quot;</span>
+</span><span id="__span-30-10"><a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a><span class="w">    </span><span class="nt">verify</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;pytest</span><span class="nv"> </span><span class="s">tests/&quot;</span>
+</span><span id="__span-30-11"><a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a>
+</span><span id="__span-30-12"><a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a><span class="w">  </span><span class="c1"># This waits for all above to complete</span>
+</span><span id="__span-30-13"><a id="__codelineno-30-13" name="__codelineno-30-13" href="#__codelineno-30-13"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Integration</span><span class="nv"> </span><span class="s">test&quot;</span>
+</span><span id="__span-30-14"><a id="__codelineno-30-14" name="__codelineno-30-14" href="#__codelineno-30-14"></a><span class="w">    </span><span class="nt">verify</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;pytest</span><span class="nv"> </span><span class="s">integration/&quot;</span>
+</span><span id="__span-30-15"><a id="__codelineno-30-15" name="__codelineno-30-15" href="#__codelineno-30-15"></a><span class="w">    </span><span class="nt">dependencies</span><span class="p">:</span>
+</span><span id="__span-30-16"><a id="__codelineno-30-16" name="__codelineno-30-16" href="#__codelineno-30-16"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Fix</span><span class="nv"> </span><span class="s">linting&quot;</span>
+</span><span id="__span-30-17"><a id="__codelineno-30-17" name="__codelineno-30-17" href="#__codelineno-30-17"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Fix</span><span class="nv"> </span><span class="s">type</span><span class="nv"> </span><span class="s">errors&quot;</span>
+</span><span id="__span-30-18"><a id="__codelineno-30-18" name="__codelineno-30-18" href="#__codelineno-30-18"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Fix</span><span class="nv"> </span><span class="s">test</span><span class="nv"> </span><span class="s">failures&quot;</span>
+</span></code></pre></div>
+<h3 id="custom-shell-workflows">Custom Shell Workflows<a class="headerlink" href="#custom-shell-workflows" title="Permanent link">&para;</a></h3>
+<p>Combine commands for power workflows:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="c1"># Monitor specific agent</span>
+</span><span id="__span-31-2"><a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>agent<span class="w"> </span>agent-abc123
+</span><span id="__span-31-3"><a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>logs<span class="w"> </span>agent-abc123<span class="w"> </span><span class="m">50</span>
+</span><span id="__span-31-4"><a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>!tail<span class="w"> </span>-f<span class="w"> </span>/tmp/agent-logs/agent-abc123.log
+</span><span id="__span-31-5"><a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a>
+</span><span id="__span-31-6"><a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="c1"># Bulk operations</span>
+</span><span id="__span-31-7"><a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a>!ls<span class="w"> </span>/tmp/agent-logs/<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l<span class="w">  </span><span class="c1"># Count total agents</span>
+</span><span id="__span-31-8"><a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a>!grep<span class="w"> </span>-l<span class="w"> </span><span class="s2">&quot;ERROR&quot;</span><span class="w"> </span>/tmp/agent-logs/*.log<span class="w">  </span><span class="c1"># Find failed logs</span>
+</span><span id="__span-31-9"><a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a>
+</span><span id="__span-31-10"><a id="__codelineno-31-10" name="__codelineno-31-10" href="#__codelineno-31-10"></a><span class="c1"># Status checking loop</span>
+</span><span id="__span-31-11"><a id="__codelineno-31-11" name="__codelineno-31-11" href="#__codelineno-31-11"></a>!watch<span class="w"> </span>-n<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="s2">&quot;echo &#39;status&#39; | uv run grind tui&quot;</span><span class="w">  </span><span class="c1"># Not recommended, use TUI directly</span>
+</span></code></pre></div>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong><a href="../getting-started/quickstart/">Getting Started</a></strong> - Installation and setup</li>
+<li><strong><a href="../guide/features/">User Guide</a></strong> - Complete feature reference</li>
+<li><strong><a href="../architecture/overview/">Architecture</a></strong> - System design</li>
+<li><strong><a href="../guide/slash-commands/">Slash Commands</a></strong> - Slash command reference</li>
+</ul>
+<h2 id="feedback">Feedback<a class="headerlink" href="#feedback" title="Permanent link">&para;</a></h2>
+<p>The TUI is under active development. Report issues or suggest features:</p>
+<ul>
+<li><a href="https://github.com/eddiedunn/claude-code-agent/issues">GitHub Issues</a></li>
+<li>Tag with <code>tui</code> label</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.7a47a382.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.e71a0d61.min.js"></script>
+      
+    
+  </body>
+</html>

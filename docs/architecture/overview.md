@@ -13,6 +13,7 @@ grind/
 ├── prompts.py           # Prompt templates and builders
 ├── hooks.py             # Slash command hook execution
 ├── engine.py            # Core grind loop orchestration
+├── logging.py           # Structured logging and telemetry
 ├── tasks.py             # Task loading and parsing
 ├── batch.py             # Batch execution runner
 ├── dag.py               # DAG executor for task dependencies
@@ -71,6 +72,26 @@ examples/
 - `execute_hooks()` - Run list of hooks based on triggers
 
 **Why**: Hooks are a distinct feature. Isolate for testing and extension.
+
+---
+
+### logging.py
+**Purpose**: Structured logging and telemetry
+
+**Contents**:
+- `setup_logger()` - Initialize session logging
+- `log_task_start()`, `log_result()` - Task lifecycle events
+- `log_tool_use()`, `log_tool_result()` - Tool execution tracing
+- `log_result_message()` - SDK telemetry (cost, tokens, duration)
+- `log_verify_command()` - Verification command output
+- `_write_jsonl_event()` - Machine-parseable event output
+- `get_log_file()`, `get_jsonl_file()` - Access current log paths
+
+**Output**:
+- `.grind/logs/*.log` - Human-readable text logs
+- `.grind/logs/*.jsonl` - Structured JSON events for analysis
+
+**Why**: Comprehensive logging enables debugging and telemetry. Dual format (text + JSONL) serves both human and programmatic consumers.
 
 ---
 

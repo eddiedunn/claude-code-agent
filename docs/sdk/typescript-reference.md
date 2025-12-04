@@ -37,7 +37,7 @@ function query({
 
 #### Returns
 
-Returns a [`Query`](#query-1) object that extends `AsyncGenerator<`[`SDKMessage`](#sdkmessage)`, void>` with additional methods.
+Returns a [`Query`](#query) object that extends `AsyncGenerator<`[`SDKMessage`](#sdkmessage)`, void>` with additional methods.
 
 ### `tool()`
 

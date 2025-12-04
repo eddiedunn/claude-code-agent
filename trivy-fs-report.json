@@ -1,0 +1,1892 @@
+{
+  "SchemaVersion": 2,
+  "CreatedAt": "2025-12-01T14:37:01.924291-06:00",
+  "ArtifactName": ".",
+  "ArtifactType": "filesystem",
+  "Metadata": {
+    "RepoURL": "git@github.com:eddiedunn/claude-code-agent.git",
+    "Branch": "main",
+    "Commit": "dcae6fd4611d05fc224087d62bb92397847bee73",
+    "CommitMsg": "docs: Update .claude/commands README to reference global commands\n\nAPI tool commands (jenkins, sonarqube, aap) live in ~/.claude/commands/.\nGrind-specific /generate-tasks stays in this repo.",
+    "Author": "redacted-user \u003credacted@example.com\u003e",
+    "Committer": "redacted-user \u003credacted@example.com\u003e"
+  },
+  "Results": [
+    {
+      "Target": "uv.lock",
+      "Class": "lang-pkgs",
+      "Type": "uv",
+      "Packages": [
+        {
+          "ID": "grind-loop@0.1.0",
+          "Name": "grind-loop",
+          "Identifier": {
+            "PURL": "pkg:pypi/grind-loop@0.1.0",
+            "UID": "b77354773252b6d4"
+          },
+          "Version": "0.1.0",
+          "Relationship": "root",
+          "DependsOn": [
+            "aiofiles@25.1.0",
+            "claude-agent-sdk@0.1.10",
+            "mkdocs-material@9.7.0",
+            "mkdocs@1.6.1",
+            "playwright@1.56.0",
+            "pytest-asyncio@1.3.0",
+            "pytest-cov@7.0.0",
+            "pytest@9.0.1",
+            "pyyaml@6.0.3",
+            "ruff@0.14.6",
+            "textual-dev@1.8.0",
+            "textual@6.7.0"
+          ]
+        },
+        {
+          "ID": "aiofiles@25.1.0",
+          "Name": "aiofiles",
+          "Identifier": {
+            "PURL": "pkg:pypi/aiofiles@25.1.0",
+            "UID": "aaa7771166ebe513"
+          },
+          "Version": "25.1.0",
+          "Relationship": "direct"
+        },
+        {
+          "ID": "claude-agent-sdk@0.1.10",
+          "Name": "claude-agent-sdk",
+          "Identifier": {
+            "PURL": "pkg:pypi/claude-agent-sdk@0.1.10",
+            "UID": "35b578db3dc9e5f4"
+          },
+          "Version": "0.1.10",
+          "Relationship": "direct",
+          "DependsOn": [
+            "anyio@4.11.0",
+            "mcp@1.22.0"
+          ]
+        },
+        {
+          "ID": "mkdocs@1.6.1",
+          "Name": "mkdocs",
+          "Identifier": {
+            "PURL": "pkg:pypi/mkdocs@1.6.1",
+            "UID": "a69b95adf6872c0c"
+          },
+          "Version": "1.6.1",
+          "Relationship": "direct",
+          "DependsOn": [
+            "click@8.3.1",
+            "colorama@0.4.6",
+            "ghp-import@2.1.0",
+            "jinja2@3.1.6",
+            "markdown@3.10",
+            "markupsafe@3.0.3",
+            "mergedeep@1.3.4",
+            "mkdocs-get-deps@0.2.0",
+            "packaging@25.0",
+            "pathspec@0.12.1",
+            "pyyaml-env-tag@1.1",
+            "pyyaml@6.0.3",
+            "watchdog@6.0.0"
+          ]
+        },
+        {
+          "ID": "mkdocs-material@9.7.0",
+          "Name": "mkdocs-material",
+          "Identifier": {
+            "PURL": "pkg:pypi/mkdocs-material@9.7.0",
+            "UID": "a3d6acfe8208a7f9"
+          },
+          "Version": "9.7.0",
+          "Relationship": "direct",
+          "DependsOn": [
+            "babel@2.17.0",
+            "backrefs@6.1",
+            "colorama@0.4.6",
+            "jinja2@3.1.6",
+            "markdown@3.10",
+            "mkdocs-material-extensions@1.3.1",
+            "mkdocs@1.6.1",
+            "paginate@0.5.7",
+            "pygments@2.19.2",
+            "pymdown-extensions@10.17.2",
+            "requests@2.32.5"
+          ]
+        },
+        {
+          "ID": "playwright@1.56.0",
+          "Name": "playwright",
+          "Identifier": {
+            "PURL": "pkg:pypi/playwright@1.56.0",
+            "UID": "f4226e16c7f4e1fa"
+          },
+          "Version": "1.56.0",
+          "Relationship": "direct",
+          "DependsOn": [
+            "greenlet@3.2.4",
+            "pyee@13.0.0"
+          ]
+        },
+        {
+          "ID": "pytest@9.0.1",
+          "Name": "pytest",
+          "Identifier": {
+            "PURL": "pkg:pypi/pytest@9.0.1",
+            "UID": "913e2ad783e65029"
+          },
+          "Version": "9.0.1",
+          "Relationship": "direct",
+          "DependsOn": [
+            "colorama@0.4.6",
+            "iniconfig@2.3.0",
+            "packaging@25.0",
+            "pluggy@1.6.0",
+            "pygments@2.19.2"
+          ]
+        },
+        {
+          "ID": "pytest-asyncio@1.3.0",
+          "Name": "pytest-asyncio",
+          "Identifier": {
+            "PURL": "pkg:pypi/pytest-asyncio@1.3.0",
+            "UID": "9023b8f7ba5a8b36"
+          },
+          "Version": "1.3.0",
+          "Relationship": "direct",
+          "DependsOn": [
+            "pytest@9.0.1",
+            "typing-extensions@4.15.0"
+          ]
+        },
+        {
+          "ID": "pytest-cov@7.0.0",
+          "Name": "pytest-cov",
+          "Identifier": {
+            "PURL": "pkg:pypi/pytest-cov@7.0.0",
+            "UID": "c20f48eda886595d"
+          },
+          "Version": "7.0.0",
+          "Relationship": "direct",
+          "DependsOn": [
+            "coverage@7.12.0",
+            "pluggy@1.6.0",
+            "pytest@9.0.1"
+          ]
+        },
+        {
+          "ID": "pyyaml@6.0.3",
+          "Name": "pyyaml",
+          "Identifier": {
+            "PURL": "pkg:pypi/pyyaml@6.0.3",
+            "UID": "20a87555a011187f"
+          },
+          "Version": "6.0.3",
+          "Relationship": "direct"
+        },
+        {
+          "ID": "ruff@0.14.6",
+          "Name": "ruff",
+          "Identifier": {
+            "PURL": "pkg:pypi/ruff@0.14.6",
+            "UID": "5d595f425750630b"
+          },
+          "Version": "0.14.6",
+          "Relationship": "direct"
+        },
+        {
+          "ID": "textual@6.7.0",
+          "Name": "textual",
+          "Identifier": {
+            "PURL": "pkg:pypi/textual@6.7.0",
+            "UID": "a3160ee8aa76263e"
+          },
+          "Version": "6.7.0",
+          "Relationship": "direct",
+          "DependsOn": [
+            "markdown-it-py@4.0.0",
+            "mdit-py-plugins@0.5.0",
+            "platformdirs@4.5.0",
+            "pygments@2.19.2",
+            "rich@14.2.0",
+            "typing-extensions@4.15.0"
+          ]
+        },
+        {
+          "ID": "textual-dev@1.8.0",
+          "Name": "textual-dev",
+          "Identifier": {
+            "PURL": "pkg:pypi/textual-dev@1.8.0",
+            "UID": "5364b6fc6c7cfc40"
+          },
+          "Version": "1.8.0",
+          "Relationship": "direct",
+          "DependsOn": [
+            "aiohttp@3.13.2",
+            "click@8.3.1",
+            "msgpack@1.1.2",
+            "textual-serve@1.1.3",
+            "textual@6.7.0",
+            "typing-extensions@4.15.0"
+          ]
+        },
+        {
+          "ID": "aiohappyeyeballs@2.6.1",
+          "Name": "aiohappyeyeballs",
+          "Identifier": {
+            "PURL": "pkg:pypi/aiohappyeyeballs@2.6.1",
+            "UID": "918a585de3fffd9e"
+          },
+          "Version": "2.6.1",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "aiohttp@3.13.2",
+          "Name": "aiohttp",
+          "Identifier": {
+            "PURL": "pkg:pypi/aiohttp@3.13.2",
+            "UID": "5f2cbb9cf80e6ebb"
+          },
+          "Version": "3.13.2",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "aiohappyeyeballs@2.6.1",
+            "aiosignal@1.4.0",
+            "attrs@25.4.0",
+            "frozenlist@1.8.0",
+            "multidict@6.7.0",
+            "propcache@0.4.1",
+            "yarl@1.22.0"
+          ]
+        },
+        {
+          "ID": "aiohttp-jinja2@1.6",
+          "Name": "aiohttp-jinja2",
+          "Identifier": {
+            "PURL": "pkg:pypi/aiohttp-jinja2@1.6",
+            "UID": "ce1eb545111e4d2"
+          },
+          "Version": "1.6",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "aiohttp@3.13.2",
+            "jinja2@3.1.6"
+          ]
+        },
+        {
+          "ID": "aiosignal@1.4.0",
+          "Name": "aiosignal",
+          "Identifier": {
+            "PURL": "pkg:pypi/aiosignal@1.4.0",
+            "UID": "f44b45e60a76e658"
+          },
+          "Version": "1.4.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "frozenlist@1.8.0",
+            "typing-extensions@4.15.0"
+          ]
+        },
+        {
+          "ID": "annotated-types@0.7.0",
+          "Name": "annotated-types",
+          "Identifier": {
+            "PURL": "pkg:pypi/annotated-types@0.7.0",
+            "UID": "11cf816d4baeb496"
+          },
+          "Version": "0.7.0",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "anyio@4.11.0",
+          "Name": "anyio",
+          "Identifier": {
+            "PURL": "pkg:pypi/anyio@4.11.0",
+            "UID": "f94135d477d34d14"
+          },
+          "Version": "4.11.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "idna@3.11",
+            "sniffio@1.3.1",
+            "typing-extensions@4.15.0"
+          ]
+        },
+        {
+          "ID": "attrs@25.4.0",
+          "Name": "attrs",
+          "Identifier": {
+            "PURL": "pkg:pypi/attrs@25.4.0",
+            "UID": "ef4f2ad742b7ad0c"
+          },
+          "Version": "25.4.0",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "babel@2.17.0",
+          "Name": "babel",
+          "Identifier": {
+            "PURL": "pkg:pypi/babel@2.17.0",
+            "UID": "4cfb0f9dd4079a70"
+          },
+          "Version": "2.17.0",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "backrefs@6.1",
+          "Name": "backrefs",
+          "Identifier": {
+            "PURL": "pkg:pypi/backrefs@6.1",
+            "UID": "dcf7893d230112e4"
+          },
+          "Version": "6.1",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "certifi@2025.11.12",
+          "Name": "certifi",
+          "Identifier": {
+            "PURL": "pkg:pypi/certifi@2025.11.12",
+            "UID": "3dfa14a38128dc50"
+          },
+          "Version": "2025.11.12",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "cffi@2.0.0",
+          "Name": "cffi",
+          "Identifier": {
+            "PURL": "pkg:pypi/cffi@2.0.0",
+            "UID": "6940c883f1a16594"
+          },
+          "Version": "2.0.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "pycparser@2.23"
+          ]
+        },
+        {
+          "ID": "charset-normalizer@3.4.4",
+          "Name": "charset-normalizer",
+          "Identifier": {
+            "PURL": "pkg:pypi/charset-normalizer@3.4.4",
+            "UID": "d40033b05839f0cd"
+          },
+          "Version": "3.4.4",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "click@8.3.1",
+          "Name": "click",
+          "Identifier": {
+            "PURL": "pkg:pypi/click@8.3.1",
+            "UID": "29b4581be9c8dc24"
+          },
+          "Version": "8.3.1",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "colorama@0.4.6"
+          ]
+        },
+        {
+          "ID": "colorama@0.4.6",
+          "Name": "colorama",
+          "Identifier": {
+            "PURL": "pkg:pypi/colorama@0.4.6",
+            "UID": "49acc401742db23d"
+          },
+          "Version": "0.4.6",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "coverage@7.12.0",
+          "Name": "coverage",
+          "Identifier": {
+            "PURL": "pkg:pypi/coverage@7.12.0",
+            "UID": "45903d092336ab0d"
+          },
+          "Version": "7.12.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "tomli@2.3.0"
+          ]
+        },
+        {
+          "ID": "cryptography@46.0.3",
+          "Name": "cryptography",
+          "Identifier": {
+            "PURL": "pkg:pypi/cryptography@46.0.3",
+            "UID": "1b8161db088ef24b"
+          },
+          "Version": "46.0.3",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "cffi@2.0.0"
+          ]
+        },
+        {
+          "ID": "frozenlist@1.8.0",
+          "Name": "frozenlist",
+          "Identifier": {
+            "PURL": "pkg:pypi/frozenlist@1.8.0",
+            "UID": "ceb29e6f4c30b4f4"
+          },
+          "Version": "1.8.0",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "ghp-import@2.1.0",
+          "Name": "ghp-import",
+          "Identifier": {
+            "PURL": "pkg:pypi/ghp-import@2.1.0",
+            "UID": "9c53330da344eb62"
+          },
+          "Version": "2.1.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "python-dateutil@2.9.0.post0"
+          ]
+        },
+        {
+          "ID": "greenlet@3.2.4",
+          "Name": "greenlet",
+          "Identifier": {
+            "PURL": "pkg:pypi/greenlet@3.2.4",
+            "UID": "4e2f73f2ca38e820"
+          },
+          "Version": "3.2.4",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "h11@0.16.0",
+          "Name": "h11",
+          "Identifier": {
+            "PURL": "pkg:pypi/h11@0.16.0",
+            "UID": "f98d44af252a461e"
+          },
+          "Version": "0.16.0",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "httpcore@1.0.9",
+          "Name": "httpcore",
+          "Identifier": {
+            "PURL": "pkg:pypi/httpcore@1.0.9",
+            "UID": "5abb1065b9068f85"
+          },
+          "Version": "1.0.9",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "certifi@2025.11.12",
+            "h11@0.16.0"
+          ]
+        },
+        {
+          "ID": "httpx@0.28.1",
+          "Name": "httpx",
+          "Identifier": {
+            "PURL": "pkg:pypi/httpx@0.28.1",
+            "UID": "47688cda8b72d4e0"
+          },
+          "Version": "0.28.1",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "anyio@4.11.0",
+            "certifi@2025.11.12",
+            "httpcore@1.0.9",
+            "idna@3.11"
+          ]
+        },
+        {
+          "ID": "httpx-sse@0.4.3",
+          "Name": "httpx-sse",
+          "Identifier": {
+            "PURL": "pkg:pypi/httpx-sse@0.4.3",
+            "UID": "87c1f59b65c4e08e"
+          },
+          "Version": "0.4.3",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "idna@3.11",
+          "Name": "idna",
+          "Identifier": {
+            "PURL": "pkg:pypi/idna@3.11",
+            "UID": "6626e8fd7a9dcda9"
+          },
+          "Version": "3.11",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "iniconfig@2.3.0",
+          "Name": "iniconfig",
+          "Identifier": {
+            "PURL": "pkg:pypi/iniconfig@2.3.0",
+            "UID": "8a3bb4b941f41129"
+          },
+          "Version": "2.3.0",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "jinja2@3.1.6",
+          "Name": "jinja2",
+          "Identifier": {
+            "PURL": "pkg:pypi/jinja2@3.1.6",
+            "UID": "7665ffa0d224a020"
+          },
+          "Version": "3.1.6",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "markupsafe@3.0.3"
+          ]
+        },
+        {
+          "ID": "jsonschema@4.25.1",
+          "Name": "jsonschema",
+          "Identifier": {
+            "PURL": "pkg:pypi/jsonschema@4.25.1",
+            "UID": "3ec65ec694e681a4"
+          },
+          "Version": "4.25.1",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "attrs@25.4.0",
+            "jsonschema-specifications@2025.9.1",
+            "referencing@0.37.0",
+            "rpds-py@0.29.0"
+          ]
+        },
+        {
+          "ID": "jsonschema-specifications@2025.9.1",
+          "Name": "jsonschema-specifications",
+          "Identifier": {
+            "PURL": "pkg:pypi/jsonschema-specifications@2025.9.1",
+            "UID": "867f65dbe20d7caf"
+          },
+          "Version": "2025.9.1",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "referencing@0.37.0"
+          ]
+        },
+        {
+          "ID": "linkify-it-py@2.0.3",
+          "Name": "linkify-it-py",
+          "Identifier": {
+            "PURL": "pkg:pypi/linkify-it-py@2.0.3",
+            "UID": "42a431112e3af828"
+          },
+          "Version": "2.0.3",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "uc-micro-py@1.0.3"
+          ]
+        },
+        {
+          "ID": "markdown@3.10",
+          "Name": "markdown",
+          "Identifier": {
+            "PURL": "pkg:pypi/markdown@3.10",
+            "UID": "f3b92482e9448def"
+          },
+          "Version": "3.10",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "markdown-it-py@4.0.0",
+          "Name": "markdown-it-py",
+          "Identifier": {
+            "PURL": "pkg:pypi/markdown-it-py@4.0.0",
+            "UID": "69ae0046dcfebc9e"
+          },
+          "Version": "4.0.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "linkify-it-py@2.0.3",
+            "mdurl@0.1.2"
+          ]
+        },
+        {
+          "ID": "markupsafe@3.0.3",
+          "Name": "markupsafe",
+          "Identifier": {
+            "PURL": "pkg:pypi/markupsafe@3.0.3",
+            "UID": "6e3d7916e912131a"
+          },
+          "Version": "3.0.3",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "mcp@1.22.0",
+          "Name": "mcp",
+          "Identifier": {
+            "PURL": "pkg:pypi/mcp@1.22.0",
+            "UID": "e01d678df10d972a"
+          },
+          "Version": "1.22.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "anyio@4.11.0",
+            "httpx-sse@0.4.3",
+            "httpx@0.28.1",
+            "jsonschema@4.25.1",
+            "pydantic-settings@2.12.0",
+            "pydantic@2.12.5",
+            "pyjwt@2.10.1",
+            "python-multipart@0.0.20",
+            "pywin32@311",
+            "sse-starlette@3.0.3",
+            "starlette@0.50.0",
+            "typing-extensions@4.15.0",
+            "typing-inspection@0.4.2",
+            "uvicorn@0.38.0"
+          ]
+        },
+        {
+          "ID": "mdit-py-plugins@0.5.0",
+          "Name": "mdit-py-plugins",
+          "Identifier": {
+            "PURL": "pkg:pypi/mdit-py-plugins@0.5.0",
+            "UID": "2616aa34551686fc"
+          },
+          "Version": "0.5.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "markdown-it-py@4.0.0"
+          ]
+        },
+        {
+          "ID": "mdurl@0.1.2",
+          "Name": "mdurl",
+          "Identifier": {
+            "PURL": "pkg:pypi/mdurl@0.1.2",
+            "UID": "d262cfb9f949997f"
+          },
+          "Version": "0.1.2",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "mergedeep@1.3.4",
+          "Name": "mergedeep",
+          "Identifier": {
+            "PURL": "pkg:pypi/mergedeep@1.3.4",
+            "UID": "2bf29065737dea33"
+          },
+          "Version": "1.3.4",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "mkdocs-get-deps@0.2.0",
+          "Name": "mkdocs-get-deps",
+          "Identifier": {
+            "PURL": "pkg:pypi/mkdocs-get-deps@0.2.0",
+            "UID": "9994a1a0fbf607a3"
+          },
+          "Version": "0.2.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "mergedeep@1.3.4",
+            "platformdirs@4.5.0",
+            "pyyaml@6.0.3"
+          ]
+        },
+        {
+          "ID": "mkdocs-material-extensions@1.3.1",
+          "Name": "mkdocs-material-extensions",
+          "Identifier": {
+            "PURL": "pkg:pypi/mkdocs-material-extensions@1.3.1",
+            "UID": "d00a7eb2d9932afd"
+          },
+          "Version": "1.3.1",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "msgpack@1.1.2",
+          "Name": "msgpack",
+          "Identifier": {
+            "PURL": "pkg:pypi/msgpack@1.1.2",
+            "UID": "eadcf9219d4c5e24"
+          },
+          "Version": "1.1.2",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "multidict@6.7.0",
+          "Name": "multidict",
+          "Identifier": {
+            "PURL": "pkg:pypi/multidict@6.7.0",
+            "UID": "9542970804e663e9"
+          },
+          "Version": "6.7.0",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "packaging@25.0",
+          "Name": "packaging",
+          "Identifier": {
+            "PURL": "pkg:pypi/packaging@25.0",
+            "UID": "9334a69100d3d432"
+          },
+          "Version": "25.0",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "paginate@0.5.7",
+          "Name": "paginate",
+          "Identifier": {
+            "PURL": "pkg:pypi/paginate@0.5.7",
+            "UID": "d84cbddd6980613c"
+          },
+          "Version": "0.5.7",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "pathspec@0.12.1",
+          "Name": "pathspec",
+          "Identifier": {
+            "PURL": "pkg:pypi/pathspec@0.12.1",
+            "UID": "cc50da07766fc1c9"
+          },
+          "Version": "0.12.1",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "platformdirs@4.5.0",
+          "Name": "platformdirs",
+          "Identifier": {
+            "PURL": "pkg:pypi/platformdirs@4.5.0",
+            "UID": "39aef799dadd8cc6"
+          },
+          "Version": "4.5.0",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "pluggy@1.6.0",
+          "Name": "pluggy",
+          "Identifier": {
+            "PURL": "pkg:pypi/pluggy@1.6.0",
+            "UID": "b0a04536bba9408"
+          },
+          "Version": "1.6.0",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "propcache@0.4.1",
+          "Name": "propcache",
+          "Identifier": {
+            "PURL": "pkg:pypi/propcache@0.4.1",
+            "UID": "44479dbef838334a"
+          },
+          "Version": "0.4.1",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "pycparser@2.23",
+          "Name": "pycparser",
+          "Identifier": {
+            "PURL": "pkg:pypi/pycparser@2.23",
+            "UID": "9ce628f2bb411ba4"
+          },
+          "Version": "2.23",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "pydantic@2.12.5",
+          "Name": "pydantic",
+          "Identifier": {
+            "PURL": "pkg:pypi/pydantic@2.12.5",
+            "UID": "79361c14889faff4"
+          },
+          "Version": "2.12.5",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "annotated-types@0.7.0",
+            "pydantic-core@2.41.5",
+            "typing-extensions@4.15.0",
+            "typing-inspection@0.4.2"
+          ]
+        },
+        {
+          "ID": "pydantic-core@2.41.5",
+          "Name": "pydantic-core",
+          "Identifier": {
+            "PURL": "pkg:pypi/pydantic-core@2.41.5",
+            "UID": "afba7890ba17ea0f"
+          },
+          "Version": "2.41.5",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "typing-extensions@4.15.0"
+          ]
+        },
+        {
+          "ID": "pydantic-settings@2.12.0",
+          "Name": "pydantic-settings",
+          "Identifier": {
+            "PURL": "pkg:pypi/pydantic-settings@2.12.0",
+            "UID": "92969409262db8c4"
+          },
+          "Version": "2.12.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "pydantic@2.12.5",
+            "python-dotenv@1.2.1",
+            "typing-inspection@0.4.2"
+          ]
+        },
+        {
+          "ID": "pyee@13.0.0",
+          "Name": "pyee",
+          "Identifier": {
+            "PURL": "pkg:pypi/pyee@13.0.0",
+            "UID": "51d90ec1ea58c2bd"
+          },
+          "Version": "13.0.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "typing-extensions@4.15.0"
+          ]
+        },
+        {
+          "ID": "pygments@2.19.2",
+          "Name": "pygments",
+          "Identifier": {
+            "PURL": "pkg:pypi/pygments@2.19.2",
+            "UID": "363b5f1e635f0a14"
+          },
+          "Version": "2.19.2",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "pyjwt@2.10.1",
+          "Name": "pyjwt",
+          "Identifier": {
+            "PURL": "pkg:pypi/pyjwt@2.10.1",
+            "UID": "ce2421c18dc899d2"
+          },
+          "Version": "2.10.1",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "cryptography@46.0.3"
+          ]
+        },
+        {
+          "ID": "pymdown-extensions@10.17.2",
+          "Name": "pymdown-extensions",
+          "Identifier": {
+            "PURL": "pkg:pypi/pymdown-extensions@10.17.2",
+            "UID": "a10dc9469d3e2d86"
+          },
+          "Version": "10.17.2",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "markdown@3.10",
+            "pyyaml@6.0.3"
+          ]
+        },
+        {
+          "ID": "python-dateutil@2.9.0.post0",
+          "Name": "python-dateutil",
+          "Identifier": {
+            "PURL": "pkg:pypi/python-dateutil@2.9.0.post0",
+            "UID": "f076f675da73225b"
+          },
+          "Version": "2.9.0.post0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "six@1.17.0"
+          ]
+        },
+        {
+          "ID": "python-dotenv@1.2.1",
+          "Name": "python-dotenv",
+          "Identifier": {
+            "PURL": "pkg:pypi/python-dotenv@1.2.1",
+            "UID": "5308b610b078e51b"
+          },
+          "Version": "1.2.1",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "python-multipart@0.0.20",
+          "Name": "python-multipart",
+          "Identifier": {
+            "PURL": "pkg:pypi/python-multipart@0.0.20",
+            "UID": "b0a9ef0d6f28df3d"
+          },
+          "Version": "0.0.20",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "pywin32@311",
+          "Name": "pywin32",
+          "Identifier": {
+            "PURL": "pkg:pypi/pywin32@311",
+            "UID": "b301115ac354b51d"
+          },
+          "Version": "311",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "pyyaml-env-tag@1.1",
+          "Name": "pyyaml-env-tag",
+          "Identifier": {
+            "PURL": "pkg:pypi/pyyaml-env-tag@1.1",
+            "UID": "6878c9d63f9e8a94"
+          },
+          "Version": "1.1",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "pyyaml@6.0.3"
+          ]
+        },
+        {
+          "ID": "referencing@0.37.0",
+          "Name": "referencing",
+          "Identifier": {
+            "PURL": "pkg:pypi/referencing@0.37.0",
+            "UID": "aaafedf3e4e5a5c"
+          },
+          "Version": "0.37.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "attrs@25.4.0",
+            "rpds-py@0.29.0",
+            "typing-extensions@4.15.0"
+          ]
+        },
+        {
+          "ID": "requests@2.32.5",
+          "Name": "requests",
+          "Identifier": {
+            "PURL": "pkg:pypi/requests@2.32.5",
+            "UID": "7eb021fd8edca65e"
+          },
+          "Version": "2.32.5",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "certifi@2025.11.12",
+            "charset-normalizer@3.4.4",
+            "idna@3.11",
+            "urllib3@2.5.0"
+          ]
+        },
+        {
+          "ID": "rich@14.2.0",
+          "Name": "rich",
+          "Identifier": {
+            "PURL": "pkg:pypi/rich@14.2.0",
+            "UID": "903b40d258032614"
+          },
+          "Version": "14.2.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "markdown-it-py@4.0.0",
+            "pygments@2.19.2"
+          ]
+        },
+        {
+          "ID": "rpds-py@0.29.0",
+          "Name": "rpds-py",
+          "Identifier": {
+            "PURL": "pkg:pypi/rpds-py@0.29.0",
+            "UID": "daa0270f870aa950"
+          },
+          "Version": "0.29.0",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "six@1.17.0",
+          "Name": "six",
+          "Identifier": {
+            "PURL": "pkg:pypi/six@1.17.0",
+            "UID": "6d52467f91fbb7a1"
+          },
+          "Version": "1.17.0",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "sniffio@1.3.1",
+          "Name": "sniffio",
+          "Identifier": {
+            "PURL": "pkg:pypi/sniffio@1.3.1",
+            "UID": "1ce19e35a8ce5758"
+          },
+          "Version": "1.3.1",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "sse-starlette@3.0.3",
+          "Name": "sse-starlette",
+          "Identifier": {
+            "PURL": "pkg:pypi/sse-starlette@3.0.3",
+            "UID": "275bbe5f26af9dad"
+          },
+          "Version": "3.0.3",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "anyio@4.11.0"
+          ]
+        },
+        {
+          "ID": "starlette@0.50.0",
+          "Name": "starlette",
+          "Identifier": {
+            "PURL": "pkg:pypi/starlette@0.50.0",
+            "UID": "89ae574f815a4f37"
+          },
+          "Version": "0.50.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "anyio@4.11.0",
+            "typing-extensions@4.15.0"
+          ]
+        },
+        {
+          "ID": "textual-serve@1.1.3",
+          "Name": "textual-serve",
+          "Identifier": {
+            "PURL": "pkg:pypi/textual-serve@1.1.3",
+            "UID": "e0c82af487fc952e"
+          },
+          "Version": "1.1.3",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "aiohttp-jinja2@1.6",
+            "aiohttp@3.13.2",
+            "jinja2@3.1.6",
+            "rich@14.2.0",
+            "textual@6.7.0"
+          ]
+        },
+        {
+          "ID": "tomli@2.3.0",
+          "Name": "tomli",
+          "Identifier": {
+            "PURL": "pkg:pypi/tomli@2.3.0",
+            "UID": "1afd82db81506bcc"
+          },
+          "Version": "2.3.0",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "typing-extensions@4.15.0",
+          "Name": "typing-extensions",
+          "Identifier": {
+            "PURL": "pkg:pypi/typing-extensions@4.15.0",
+            "UID": "88de06ebf9f410bf"
+          },
+          "Version": "4.15.0",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "typing-inspection@0.4.2",
+          "Name": "typing-inspection",
+          "Identifier": {
+            "PURL": "pkg:pypi/typing-inspection@0.4.2",
+            "UID": "284668b5aaa0b762"
+          },
+          "Version": "0.4.2",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "typing-extensions@4.15.0"
+          ]
+        },
+        {
+          "ID": "uc-micro-py@1.0.3",
+          "Name": "uc-micro-py",
+          "Identifier": {
+            "PURL": "pkg:pypi/uc-micro-py@1.0.3",
+            "UID": "3bedbe14019ad1d8"
+          },
+          "Version": "1.0.3",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "urllib3@2.5.0",
+          "Name": "urllib3",
+          "Identifier": {
+            "PURL": "pkg:pypi/urllib3@2.5.0",
+            "UID": "aa9eb223f0bf0795"
+          },
+          "Version": "2.5.0",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "uvicorn@0.38.0",
+          "Name": "uvicorn",
+          "Identifier": {
+            "PURL": "pkg:pypi/uvicorn@0.38.0",
+            "UID": "4248aee31455afab"
+          },
+          "Version": "0.38.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "click@8.3.1",
+            "h11@0.16.0"
+          ]
+        },
+        {
+          "ID": "watchdog@6.0.0",
+          "Name": "watchdog",
+          "Identifier": {
+            "PURL": "pkg:pypi/watchdog@6.0.0",
+            "UID": "7ec92d0ebb394e1b"
+          },
+          "Version": "6.0.0",
+          "Indirect": true,
+          "Relationship": "indirect"
+        },
+        {
+          "ID": "yarl@1.22.0",
+          "Name": "yarl",
+          "Identifier": {
+            "PURL": "pkg:pypi/yarl@1.22.0",
+            "UID": "94d72a19193845ac"
+          },
+          "Version": "1.22.0",
+          "Indirect": true,
+          "Relationship": "indirect",
+          "DependsOn": [
+            "idna@3.11",
+            "multidict@6.7.0",
+            "propcache@0.4.1"
+          ]
+        }
+      ]
+    },
+    {
+      "Target": ".venv/lib/python3.11/site-packages/moto/ec2/models/elastic_network_interfaces.py",
+      "Class": "secret",
+      "Secrets": [
+        {
+          "RuleID": "aws-access-key-id",
+          "Category": "AWS",
+          "Severity": "CRITICAL",
+          "Title": "AWS Access Key ID",
+          "StartLine": 81,
+          "EndLine": 81,
+          "Code": {
+            "Lines": [
+              {
+                "Number": 79,
+                "Content": "        self.add_tags(tags or {})",
+                "IsCause": false,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "        self.add_tags(tags or {})",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 80,
+                "Content": "        self.requester_managed = False",
+                "IsCause": false,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "        self.requester_managed = False",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 81,
+                "Content": "        self.requester_id = \"********************\"",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "        self.requester_id = \"********************\"",
+                "FirstCause": true,
+                "LastCause": true
+              },
+              {
+                "Number": 82,
+                "Content": "        self.status = \"available\"",
+                "IsCause": false,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "        self.status = \"available\"",
+                "FirstCause": false,
+                "LastCause": false
+              }
+            ]
+          },
+          "Match": "        self.requester_id = \"********************\"",
+          "Offset": 2822
+        }
+      ]
+    },
+    {
+      "Target": ".venv/lib/python3.11/site-packages/moto/moto_proxy/ca.key",
+      "Class": "secret",
+      "Secrets": [
+        {
+          "RuleID": "private-key",
+          "Category": "AsymmetricPrivateKey",
+          "Severity": "HIGH",
+          "Title": "Asymmetric Private Key",
+          "StartLine": 2,
+          "EndLine": 27,
+          "Code": {
+            "Lines": [
+              {
+                "Number": 1,
+                "Content": "-----BEGIN PRIVATE KEY-----",
+                "IsCause": false,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "-----BEGIN PRIVATE KEY-----",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 2,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": true,
+                "LastCause": false
+              },
+              {
+                "Number": 3,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 4,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 5,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 6,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 7,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 8,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 9,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 10,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 11,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 12,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 13,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 14,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 15,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 16,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 17,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 18,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 19,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 20,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 21,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 22,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 23,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 24,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 25,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 26,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 27,
+                "Content": "************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "************************",
+                "FirstCause": false,
+                "LastCause": true
+              },
+              {
+                "Number": 28,
+                "Content": "-----END PRIVATE KEY-----",
+                "IsCause": false,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "-----END PRIVATE KEY-----",
+                "FirstCause": false,
+                "LastCause": false
+              }
+            ]
+          },
+          "Match": "****************************************************************",
+          "Offset": 28
+        }
+      ]
+    },
+    {
+      "Target": ".venv/lib/python3.11/site-packages/moto/moto_proxy/cert.key",
+      "Class": "secret",
+      "Secrets": [
+        {
+          "RuleID": "private-key",
+          "Category": "AsymmetricPrivateKey",
+          "Severity": "HIGH",
+          "Title": "Asymmetric Private Key",
+          "StartLine": 2,
+          "EndLine": 27,
+          "Code": {
+            "Lines": [
+              {
+                "Number": 1,
+                "Content": "-----BEGIN PRIVATE KEY-----",
+                "IsCause": false,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "-----BEGIN PRIVATE KEY-----",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 2,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": true,
+                "LastCause": false
+              },
+              {
+                "Number": 3,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 4,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 5,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 6,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 7,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 8,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 9,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 10,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 11,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 12,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 13,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 14,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 15,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 16,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 17,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 18,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 19,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 20,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 21,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 22,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 23,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 24,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 25,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 26,
+                "Content": "****************************************************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "****************************************************************",
+                "FirstCause": false,
+                "LastCause": false
+              },
+              {
+                "Number": 27,
+                "Content": "************************",
+                "IsCause": true,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "************************",
+                "FirstCause": false,
+                "LastCause": true
+              },
+              {
+                "Number": 28,
+                "Content": "-----END PRIVATE KEY-----",
+                "IsCause": false,
+                "Annotation": "",
+                "Truncated": false,
+                "Highlighted": "-----END PRIVATE KEY-----",
+                "FirstCause": false,
+                "LastCause": false
+              }
+            ]
+          },
+          "Match": "****************************************************************",
+          "Offset": 28
+        }
+      ]
+    }
+  ]
+}

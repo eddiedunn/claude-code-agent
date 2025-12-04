@@ -408,6 +408,5 @@ Result: Specific targeted tasks
 ## Next Steps
 
 - **[Features Guide](features.md)** - Learn about hooks, custom prompts, model selection
-- **[Task Definitions](task-definitions.md)** - YAML format reference
-- **[Batch Mode](batch-mode.md)** - Running multiple tasks
 - **[Slash Commands](slash-commands.md)** - Complete slash command reference
+- **[DAG Execution](dag-execution.md)** - Task dependencies and orchestration

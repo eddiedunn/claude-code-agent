@@ -10,10 +10,12 @@ Complete guide to all features in the grind loop system.
 
 Choose the right model for each task to optimize cost, speed, and quality.
 
+**2025 Best Practice**: Use **Haiku 4.5** for most work. It's fast, cost-effective, and handles the vast majority of coding tasks excellently.
+
 **Models Available**:
-- `haiku` - Fast, cheap, good for simple tasks
-- `sonnet` - Balanced, best for most tasks (default)
-- `opus` - Powerful, expensive, for complex tasks
+- `haiku` - **Haiku 4.5** - Fast, intelligent, cost-effective (recommended for most tasks)
+- `sonnet` - **Sonnet 4** - Premium reasoning for complex multi-step problems
+- `opus` - **Opus 3** - Maximum capability for architectural decisions (rarely needed)
 
 **Usage**:
 ```yaml
@@ -25,7 +27,7 @@ tasks:
 
   - task: "Refactor authentication"
     verify: "pytest tests/auth/"
-    model: opus
+    model: sonnet  # Use sonnet for complex refactors
     max_iterations: 15
 ```
 
@@ -34,10 +36,31 @@ tasks:
 uv run grind.py run -t "Fix tests" -v "pytest" -m haiku
 ```
 
-**Decision Guide**:
-- **Haiku**: Linting, formatting, simple fixes, high volume
-- **Sonnet**: Bug fixes, refactoring, test fixes, general work
-- **Opus**: Architecture changes, security audits, complex logic
+**Decision Guide** (2025):
+
+**Use Haiku 4.5 (Default)** for ~90% of work:
+- Bug fixes and debugging
+- Test fixes and writing tests
+- Linting and formatting
+- Simple to moderate refactoring
+- API endpoint updates
+- Database query fixes
+- Documentation updates
+- Dependency updates
+- Performance optimizations
+
+**Use Sonnet 4** only when you need:
+- Complex multi-step refactoring across many files
+- Tricky algorithmic problems requiring deep reasoning
+- Architectural planning for large features
+- Security-sensitive code changes
+
+**Use Opus 3** rarely, only for:
+- Major architectural redesigns
+- Security audits requiring exhaustive analysis
+- Mission-critical algorithm development
+
+**Cost Comparison**: Haiku is ~50x cheaper than Opus. For most grind loops, the speed and cost savings of Haiku far outweigh any marginal quality gains from larger models.
 
 ---
 

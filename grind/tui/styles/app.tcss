@@ -1,0 +1,272 @@
+/* Agent Orchestration TUI Styles */
+
+/* Color Variables - Dark Theme */
+$success: #00ff00;
+$error: #ff5555;
+$warning: #ffaa00;
+$info: #55aaff;
+$text-muted: #888888;
+
+/* Screen layout */
+Screen {
+    layout: grid;
+    grid-size: 1;
+    grid-rows: auto 1fr auto;
+}
+
+Header {
+    dock: top;
+    background: $primary;
+}
+
+Footer {
+    dock: bottom;
+}
+
+/* Status Bar */
+#status-bar {
+    dock: top;
+    height: 1;
+    background: $surface;
+    padding: 0 1;
+}
+
+/* TabbedContent styling */
+TabbedContent {
+    height: 1fr;
+}
+
+/* Tab bar appearance */
+TabbedContent > ContentSwitcher {
+    background: $surface;
+}
+
+Tabs {
+    dock: top;
+    background: $surface;
+}
+
+/* Tab button styling */
+Tab {
+    background: $surface;
+    color: $text;
+    padding: 0 2;
+    text-style: none;
+}
+
+Tab:hover {
+    background: $surface-lighten-1;
+}
+
+/* Active tab highlighting */
+Tab.-active {
+    background: $primary;
+    color: $text;
+    text-style: bold;
+}
+
+/* Tab content padding */
+TabPane {
+    padding: 1;
+}
+
+/* ListView styling for running agents */
+ListView {
+    height: 1fr;
+    background: $surface;
+    scrollbar-background: $surface;
+    scrollbar-color: $primary;
+}
+
+ListView > ListItem {
+    padding: 0 1;
+    background: $surface;
+}
+
+/* Hover state for list items */
+ListView > ListItem:hover {
+    background: $surface-lighten-1;
+}
+
+/* Selection highlighting */
+ListView > ListItem.-highlight {
+    background: $accent;
+    color: $text;
+}
+
+/* Scrollbar styling for ListView */
+ListView:focus {
+    border: tall $accent;
+}
+
+/* DataTable styling for completed agents */
+DataTable {
+    height: 1fr;
+    background: $surface;
+}
+
+/* Header row styling */
+DataTable > .datatable--header {
+    background: $primary;
+    color: $text;
+    text-style: bold;
+}
+
+/* Cursor/selected row */
+DataTable > .datatable--cursor {
+    background: $accent;
+}
+
+/* Hover state */
+DataTable:hover {
+    border: tall $accent;
+}
+
+/* Zebra striping for data rows */
+DataTable > .datatable--odd {
+    background: $surface;
+}
+
+DataTable > .datatable--even {
+    background: $surface-darken-1;
+}
+
+/* Scrollbar for DataTable */
+DataTable {
+    scrollbar-background: $surface;
+    scrollbar-color: $primary;
+    scrollbar-color-hover: $accent;
+    scrollbar-color-active: $accent;
+}
+
+/* Log viewer styling - terminal-like appearance with monospace */
+StreamingLogViewer {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    scrollbar-background: #1a1a2e;
+    scrollbar-color: #4a4a6a;
+    scrollbar-color-hover: #6a6a8a;
+    scrollbar-color-active: #8a8aaa;
+}
+
+/* Syntax highlighting colors for log viewer */
+StreamingLogViewer .log-error {
+    color: $error;
+    text-style: bold;
+}
+
+StreamingLogViewer .log-warning {
+    color: $warning;
+}
+
+StreamingLogViewer .log-success {
+    color: $success;
+}
+
+StreamingLogViewer .log-info {
+    color: $info;
+}
+
+StreamingLogViewer .log-timestamp {
+    color: #888888;
+}
+
+/* Semantic colors for status */
+.status-complete {
+    color: $success;
+}
+
+.status-failed {
+    color: $error;
+}
+
+.status-stuck {
+    color: $error;
+    text-style: bold;
+}
+
+.status-running {
+    color: $warning;
+    text-style: bold;
+}
+
+.status-pending {
+    color: $text-muted;
+}
+
+.status-paused {
+    color: magenta;
+    text-style: bold;
+}
+
+/* DAG placeholder styling */
+#dag-placeholder {
+    content-align: center middle;
+    color: $text-muted;
+}
+
+/* Container styling */
+.agent-overview {
+    height: 1fr;
+    padding: 1;
+}
+
+/* Shell styling - Terminal-like appearance */
+AgentShell {
+    height: 100%;
+    background: $surface;
+}
+
+AgentShell #shell-output {
+    height: 1fr;
+    background: #1a1a2e;
+    padding: 0 1;
+    scrollbar-background: #1a1a2e;
+    scrollbar-color: #4a4a6a;
+    scrollbar-color-hover: #6a6a8a;
+    scrollbar-color-active: #8a8aaa;
+}
+
+AgentShell #shell-output Static {
+    background: transparent;
+    color: #e0e0e0;
+}
+
+/* Shell prompt - Green terminal style */
+AgentShell #prompt-container {
+    height: auto;
+    background: #1a1a2e;
+    padding: 0 1;
+}
+
+AgentShell #shell-prompt {
+    width: auto;
+    color: #00ff00;
+    text-style: bold;
+    background: transparent;
+}
+
+/* Shell input field */
+AgentShell #shell-input {
+    width: 1fr;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    border: none;
+}
+
+AgentShell #shell-input:focus {
+    border: none;
+}
+
+/* Shell completions popup */
+AgentShell #completions-popup {
+    display: none;
+    background: #2a2a4e;
+    border: solid #4a4a6a;
+    padding: 0 1;
+    max-height: 10;
+}
+
+AgentShell #completions-popup.visible {
+    display: block;
+}

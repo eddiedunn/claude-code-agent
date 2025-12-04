@@ -4,6 +4,18 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from grind.logging import disable_logging, enable_logging, reset_logger
+
+
+@pytest.fixture(autouse=True)
+def isolate_logging():
+    """Disable file logging during tests to prevent polluting .grind/logs/."""
+    disable_logging()
+    reset_logger()
+    yield
+    reset_logger()
+    enable_logging()
+
 
 @pytest.fixture
 def mock_sdk_client():
@@ -82,3 +94,38 @@ def sample_grind_result():
         hooks_executed=[],
         model="sonnet"
     )
+
+
+@pytest.fixture
+def sample_task_def() -> 'TaskDefinition':
+    """Standard TaskDefinition for testing."""
+    from grind.models import TaskDefinition
+    return TaskDefinition(
+        task="Test task",
+        verify="echo test",
+        max_iterations=5,
+        model="sonnet"
+    )
+
+
+@pytest.fixture
+def dag_graph_linear() -> 'TaskGraph':
+    """Linear DAG: A -> B -> C."""
+    from grind.models import TaskGraph, TaskNode, TaskDefinition
+    graph = TaskGraph()
+    graph.nodes["A"] = TaskNode(id="A", task_def=TaskDefinition(task="A", verify="echo A"))
+    graph.nodes["B"] = TaskNode(id="B", task_def=TaskDefinition(task="B", verify="echo B"), depends_on=["A"])
+    graph.nodes["C"] = TaskNode(id="C", task_def=TaskDefinition(task="C", verify="echo C"), depends_on=["B"])
+    return graph
+
+
+@pytest.fixture
+def dag_graph_diamond() -> 'TaskGraph':
+    """Diamond DAG: A -> B,C -> D."""
+    from grind.models import TaskGraph, TaskNode, TaskDefinition
+    graph = TaskGraph()
+    graph.nodes["A"] = TaskNode(id="A", task_def=TaskDefinition(task="A", verify="echo A"))
+    graph.nodes["B"] = TaskNode(id="B", task_def=TaskDefinition(task="B", verify="echo B"), depends_on=["A"])
+    graph.nodes["C"] = TaskNode(id="C", task_def=TaskDefinition(task="C", verify="echo C"), depends_on=["A"])
+    graph.nodes["D"] = TaskNode(id="D", task_def=TaskDefinition(task="D", verify="echo D"), depends_on=["B", "C"])
+    return graph

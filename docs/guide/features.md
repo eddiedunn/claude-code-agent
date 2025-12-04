@@ -11,9 +11,9 @@ Complete guide to all features in the grind loop system.
 Choose the right model for each task to optimize cost, speed, and quality.
 
 **Models Available**:
-- `haiku` - Fast, cheap, good for simple tasks
-- `sonnet` - Balanced, best for most tasks (default)
-- `opus` - Powerful, expensive, for complex tasks
+- `haiku` - Fast, cheap, good for simple tasks (default)
+- `sonnet` - Balanced, best for medium complexity tasks
+- `opus` - Powerful, expensive, for planning and architecture
 
 **Usage**:
 ```yaml
@@ -35,9 +35,16 @@ uv run grind.py run -t "Fix tests" -v "pytest" -m haiku
 ```
 
 **Decision Guide**:
-- **Haiku**: Linting, formatting, simple fixes, high volume
-- **Sonnet**: Bug fixes, refactoring, test fixes, general work
-- **Opus**: Architecture changes, security audits, complex logic
+- **Haiku** (default): Linting, formatting, simple fixes, high volume
+- **Sonnet**: Bug fixes, refactoring, test fixes, medium complexity
+- **Opus**: Architecture changes, planning, security audits, complex logic
+
+**Pricing (December 2025)**:
+| Model | Input (per 1M tokens) | Output (per 1M tokens) |
+|-------|----------------------|------------------------|
+| haiku | $0.25 | $1.25 |
+| sonnet | $3.00 | $15.00 |
+| opus | $15.00 | $75.00 |
 
 ---
 
@@ -387,9 +394,9 @@ if result.status == GrindStatus.COMPLETE:
 Don't add hooks and custom prompts until you need them. Start with basic tasks.
 
 ### 2. Choose Models Wisely
-- Use haiku for volume work (linting, formatting)
-- Use sonnet as default (good balance)
-- Use opus sparingly (expensive, slow, but powerful)
+- Use haiku as default (fast, cheap, good for most simple tasks)
+- Use sonnet for medium complexity work (bug fixes, refactoring)
+- Use opus sparingly for planning/architecture (expensive, slow, but powerful)
 
 ### 3. Use Decompose
 For large problems, let Claude break it down:
@@ -421,6 +428,85 @@ The quality of verification commands determines success:
 
 ---
 
+### 7. Logging and Telemetry
+
+Every grind session creates detailed logs for debugging and analysis.
+
+**Log Location**:
+```
+.grind/logs/
+  20251130_142530_Fix_tests.log     # Human-readable text log
+  20251130_142530_Fix_tests.jsonl   # Machine-parseable JSONL
+```
+
+**What's Logged**:
+
+| Event | Data Captured |
+|-------|---------------|
+| Session start | Timestamp, working directory, Python version, platform |
+| Task start | Task description, verify command, model, max iterations |
+| Tool calls | Tool name, ID, full input parameters |
+| Tool results | Tool name, ID, full output, error status |
+| Thinking blocks | Claude's reasoning (when extended thinking enabled) |
+| SDK telemetry | Duration, API time, token usage, cost |
+| Verify commands | Command, exit code, stdout, stderr, duration |
+| Iteration end | Tools used, text collected, duration |
+| Task result | Status, iterations, duration, message |
+| Errors | Error message, traceback availability |
+
+**JSONL Events**:
+
+The `.jsonl` file contains structured events for programmatic analysis:
+
+```json
+{"timestamp": "2025-11-30T14:25:30", "event": "session_start", "working_directory": "/project", ...}
+{"timestamp": "2025-11-30T14:25:31", "event": "task_start", "task": "Fix tests", "model": "sonnet", ...}
+{"timestamp": "2025-11-30T14:25:32", "event": "tool_use", "tool_name": "Read", "tool_id": "...", ...}
+{"timestamp": "2025-11-30T14:25:33", "event": "tool_result", "tool_name": "Read", "result_length": 1234, ...}
+{"timestamp": "2025-11-30T14:25:40", "event": "sdk_result", "total_cost_usd": 0.0012, "usage": {...}, ...}
+{"timestamp": "2025-11-30T14:25:45", "event": "verify_command", "exit_code": 0, "success": true, ...}
+{"timestamp": "2025-11-30T14:25:46", "event": "task_result", "status": "COMPLETE", "iterations": 2, ...}
+```
+
+**Analyzing Logs**:
+
+```bash
+# View recent log
+cat .grind/logs/*.log | tail -100
+
+# See all tool calls
+cat .grind/logs/*.jsonl | jq 'select(.event == "tool_use") | .tool_name'
+
+# Calculate total cost across sessions
+cat .grind/logs/*.jsonl | jq -s '[.[] | select(.event == "sdk_result") | .total_cost_usd // 0] | add'
+
+# Find failed verify commands
+cat .grind/logs/*.jsonl | jq 'select(.event == "verify_command" and .success == false)'
+
+# Get token usage summary
+cat .grind/logs/*.jsonl | jq 'select(.event == "sdk_result") | .usage'
+
+# Find errors
+cat .grind/logs/*.jsonl | jq 'select(.event == "error")'
+```
+
+**Programmatic Access**:
+
+```python
+from grind.logging import get_log_file, get_jsonl_file, get_log_dir
+
+# Get current log paths
+log_file = get_log_file()      # Path to .log file
+jsonl_file = get_jsonl_file()  # Path to .jsonl file
+log_dir = get_log_dir()        # Path to .grind/logs/
+
+# Disable JSON logging (text only)
+from grind.logging import set_json_logging
+set_json_logging(False)
+```
+
+---
+
 ## Troubleshooting
 
 ### Task Gets Stuck
@@ -440,6 +526,18 @@ The quality of verification commands determines success:
 - Use more powerful model
 - Add hooks for intermediate checks
 
+### Debugging with Logs
+- Check `.grind/logs/*.log` for full execution trace
+- Use `.grind/logs/*.jsonl` for structured analysis
+- Look for `tool_result` events to see what Claude saw
+- Check `verify_command` events to see test output
+- Review `sdk_result` for cost and token usage
+
+```bash
+# Quick debug: see what happened in last run
+cat .grind/logs/*.jsonl | jq 'select(.event == "error" or .event == "task_result")'
+```
+
 ---
 
-**Last Updated**: 2025-11-28
+**Last Updated**: 2025-11-30

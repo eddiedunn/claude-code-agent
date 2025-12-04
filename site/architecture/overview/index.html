@@ -16,7 +16,7 @@
         <link rel="prev" href="../../guide/slash-commands/">
       
       
-        <link rel="next" href="../../sdk/overview/">
+        <link rel="next" href="../orchestration-vision/">
       
       
         
@@ -626,6 +626,90 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guide/model-selection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/decompose/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Task Decomposition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TUI - Agent Orchestration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guide/dag-execution/" class="md-nav__link">
         
   
@@ -883,6 +967,17 @@
     <span class="md-ellipsis">
       
         hooks.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#loggingpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        logging.py
       
     </span>
   </a>
@@ -1264,6 +1359,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../orchestration-vision/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Orchestration Vision
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1986,6 +2109,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#loggingpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        logging.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#enginepy" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2386,16 +2520,17 @@
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├── prompts.py           # Prompt templates and builders
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>├── hooks.py             # Slash command hook execution
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>├── engine.py            # Core grind loop orchestration
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>├── tasks.py             # Task loading and parsing
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>├── batch.py             # Batch execution runner
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>├── dag.py               # DAG executor for task dependencies
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>├── worktree.py          # Git worktree management
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>├── cli.py               # Command-line interface
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>└── utils.py             # Colors and output formatting
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>grind.py                 # Entry point (thin wrapper)
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>examples/
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>└── enhanced-tasks.yaml  # Example task definitions
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>├── logging.py           # Structured logging and telemetry
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>├── tasks.py             # Task loading and parsing
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>├── batch.py             # Batch execution runner
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>├── dag.py               # DAG executor for task dependencies
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>├── worktree.py          # Git worktree management
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>├── cli.py               # Command-line interface
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>└── utils.py             # Colors and output formatting
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>grind.py                 # Entry point (thin wrapper)
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>examples/
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>└── enhanced-tasks.yaml  # Example task definitions
 </span></code></pre></div>
 <hr />
 <h2 id="module-responsibilities">Module Responsibilities<a class="headerlink" href="#module-responsibilities" title="Permanent link">&para;</a></h2>
@@ -2431,6 +2566,21 @@
 - <code>execute_slash_command()</code> - Run single command, capture output
 - <code>execute_hooks()</code> - Run list of hooks based on triggers</p>
 <p><strong>Why</strong>: Hooks are a distinct feature. Isolate for testing and extension.</p>
+<hr />
+<h3 id="loggingpy">logging.py<a class="headerlink" href="#loggingpy" title="Permanent link">&para;</a></h3>
+<p><strong>Purpose</strong>: Structured logging and telemetry</p>
+<p><strong>Contents</strong>:
+- <code>setup_logger()</code> - Initialize session logging
+- <code>log_task_start()</code>, <code>log_result()</code> - Task lifecycle events
+- <code>log_tool_use()</code>, <code>log_tool_result()</code> - Tool execution tracing
+- <code>log_result_message()</code> - SDK telemetry (cost, tokens, duration)
+- <code>log_verify_command()</code> - Verification command output
+- <code>_write_jsonl_event()</code> - Machine-parseable event output
+- <code>get_log_file()</code>, <code>get_jsonl_file()</code> - Access current log paths</p>
+<p><strong>Output</strong>:
+- <code>.grind/logs/*.log</code> - Human-readable text logs
+- <code>.grind/logs/*.jsonl</code> - Structured JSON events for analysis</p>
+<p><strong>Why</strong>: Comprehensive logging enables debugging and telemetry. Dual format (text + JSONL) serves both human and programmatic consumers.</p>
 <hr />
 <h3 id="enginepy">engine.py<a class="headerlink" href="#enginepy" title="Permanent link">&para;</a></h3>
 <p><strong>Purpose</strong>: Core orchestration logic</p>

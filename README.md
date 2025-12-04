@@ -1,6 +1,6 @@
 # Grind Loop
 
-Automated fix-verify loops using the Claude Agent SDK.
+Automated fix-verify loops using Claude Agent SDK with intelligent model selection and task decomposition.
 
 ## The Problem
 
@@ -16,6 +16,21 @@ uv run grind run --task "Fix failing tests" --verify "pytest tests/ -v"
 ```
 
 Walk away. Come back to passing tests.
+
+## Key Features (December 2025)
+
+- **Intelligent Model Selection**: Opus 4.5 for planning, Haiku 4.5 for execution (3-5x cost savings)
+- **Extended Thinking**: 10K token reasoning budget for complex decomposition
+- **CostAwareRouter**: Automatic model assignment based on task complexity
+- **Interleaved Thinking**: Better reasoning between tool calls
+- **DAG Execution**: Parallel task execution with dependency management
+- **Git Worktrees**: Conflict-free parallel execution
+- **WebSearch Integration**: Research capability during decomposition
+
+**Pricing (Dec 2025):**
+- Haiku 4.5: $1/$5 per million tokens (default, 73% of Opus capability)
+- Sonnet 4.5: $3/$15 per million tokens (medium complexity)
+- Opus 4.5: $5/$25 per million tokens (planning, 67% cheaper than Opus 4.1)
 
 ## Installation
 
@@ -87,6 +102,31 @@ uv run grind decompose \
 # Then run the generated tasks
 uv run grind batch tasks.yaml
 ```
+
+## Experimental: TUI (Terminal Interface)
+
+⚠️ **Alpha Status** - Interactive terminal interface for grind orchestration.
+
+**What works:**
+- Interactive shell for running grind tasks
+- Command history and tab completion
+- Basic task execution and status tracking
+
+**What's planned:**
+- Real-time multi-agent monitoring
+- DAG visualization
+- Log streaming dashboard
+
+Try it:
+```bash
+# Launch TUI
+uv run grind tui
+
+# Launch with task file
+uv run grind tui -t tasks.yaml
+```
+
+Navigate tabs with 1-6 keys. Use tab 6 (Shell) for interactive commands.
 
 ## Real-World Examples
 
@@ -191,6 +231,27 @@ Generate a `tasks.yaml` file from conversation context.
 
 See [.claude/commands/README.md](./.claude/commands/README.md) for details.
 
+## Model Selection & Pricing
+
+Choose the right model for your task based on complexity and budget (December 2025 rates):
+
+| Model | Use Case | Input (per 1M tokens) | Output (per 1M tokens) |
+|-------|----------|----------------------|------------------------|
+| **haiku** (default) | Simple fixes, linting, formatting | $0.25 | $1.25 |
+| **sonnet** | Bug fixes, refactoring, medium complexity | $3.00 | $15.00 |
+| **opus** | Planning, architecture, complex logic | $15.00 | $75.00 |
+
+**Usage**:
+```bash
+# Use default (haiku)
+uv run grind run -t "Fix linting" -v "ruff check ."
+
+# Specify model explicitly
+uv run grind run -t "Refactor auth" -v "pytest tests/auth/" -m sonnet
+```
+
+**Recommendation**: Start with haiku for most tasks. Use sonnet for medium complexity work. Reserve opus for architectural decisions and complex planning tasks.
+
 ## Tips
 
 1. **Use `/generate-tasks`** in conversations to automatically create task files
@@ -199,6 +260,7 @@ See [.claude/commands/README.md](./.claude/commands/README.md) for details.
 4. **Use --verbose** while learning to see what Claude is doing
 5. **Lower max_iterations** for quick tasks, higher for complex ones
 6. **Good verification commands** give useful error output
+7. **Choose models wisely** - haiku for simple tasks, sonnet for medium complexity, opus for planning/architecture
 
 ## Project Structure
 

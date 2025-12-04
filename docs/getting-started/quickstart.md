@@ -189,7 +189,7 @@ Generate a `tasks.yaml` file from conversation context.
 - Generate properly formatted YAML
 - Write to file and show usage
 
-See [.claude/commands/README.md](./.claude/commands/README.md) for details.
+See the `.claude/commands/README.md` file in the project root for details.
 
 ## Tips
 
@@ -220,7 +220,6 @@ examples/
 
 ## Documentation
 
-- **[README.md](./README.md)** - Quick start and basic usage (you are here)
-- **[FEATURES.md](./FEATURES.md)** - Complete features guide (models, hooks, prompts)
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System design and module breakdown
-- **[REFACTORING_SUMMARY.md](./REFACTORING_SUMMARY.md)** - Why we refactored and what changed
+- **[Features](../guide/features.md)** - Complete features guide
+- **[Architecture](../architecture/overview.md)** - System design and module breakdown
+- **[Using with Claude Code](../guide/using-with-claude-code.md)** - Integration guide

@@ -54,7 +54,16 @@ def create_mock_assistant_message(blocks: list) -> MagicMock:
 
 def create_mock_result_message() -> MagicMock:
     """Create a mock ResultMessage with correct type for isinstance checks."""
-    return MagicMock(spec=ResultMessage)
+    mock = MagicMock(spec=ResultMessage)
+    # Set required attributes for logging
+    mock.duration_ms = 1000
+    mock.duration_api_ms = 800
+    mock.is_error = False
+    mock.num_turns = 1
+    mock.session_id = "test-session-123"
+    mock.total_cost_usd = 0.001
+    mock.usage = {"input_tokens": 100, "output_tokens": 50}
+    return mock
 
 
 async def mock_receive_response_generator(messages: list):
@@ -463,3 +472,198 @@ async def test_grind_ignores_signal_mid_sentence(mock_sdk_client):
     # Should NOT complete, should reach max iterations
     assert result.status == GrindStatus.MAX_ITERATIONS
     assert result.iterations == 3
+
+
+@pytest.mark.asyncio
+async def test_grind_signal_with_markdown_bold(mock_sdk_client):
+    """Test that signal with markdown bold formatting is detected."""
+    task_def = TaskDefinition(
+        task="Test task",
+        verify="echo test",
+        max_iterations=5,
+        model="sonnet",
+    )
+
+    # Signal wrapped in markdown bold - this is common model output
+    text_block = create_mock_text_block("All tests pass!\n\n**GRIND_COMPLETE**")
+    assistant_msg = create_mock_assistant_message([text_block])
+    result_msg = create_mock_result_message()
+
+    async def mock_receive():
+        yield assistant_msg
+        yield result_msg
+
+    mock_sdk_client.receive_response = mock_receive
+
+    with patch('grind.engine.ClaudeSDKClient', return_value=mock_sdk_client):
+        result = await grind(task_def)
+
+    assert result.status == GrindStatus.COMPLETE
+
+
+@pytest.mark.asyncio
+async def test_grind_signal_with_markdown_bold_and_message(mock_sdk_client):
+    """Test that signal with markdown bold and message is detected."""
+    task_def = TaskDefinition(
+        task="Test task",
+        verify="echo test",
+        max_iterations=5,
+        model="sonnet",
+    )
+
+    # Signal with bold markdown and a message
+    text_block = create_mock_text_block("Done!\n**GRIND_COMPLETE**: All tests passed")
+    assistant_msg = create_mock_assistant_message([text_block])
+    result_msg = create_mock_result_message()
+
+    async def mock_receive():
+        yield assistant_msg
+        yield result_msg
+
+    mock_sdk_client.receive_response = mock_receive
+
+    with patch('grind.engine.ClaudeSDKClient', return_value=mock_sdk_client):
+        result = await grind(task_def)
+
+    assert result.status == GrindStatus.COMPLETE
+    assert result.message == "All tests passed"
+
+
+@pytest.mark.asyncio
+async def test_grind_signal_with_italic_formatting(mock_sdk_client):
+    """Test that signal with italic markdown formatting is detected."""
+    task_def = TaskDefinition(
+        task="Test task",
+        verify="echo test",
+        max_iterations=5,
+        model="sonnet",
+    )
+
+    # Signal with italic markdown
+    text_block = create_mock_text_block("*GRIND_COMPLETE*")
+    assistant_msg = create_mock_assistant_message([text_block])
+    result_msg = create_mock_result_message()
+
+    async def mock_receive():
+        yield assistant_msg
+        yield result_msg
+
+    mock_sdk_client.receive_response = mock_receive
+
+    with patch('grind.engine.ClaudeSDKClient', return_value=mock_sdk_client):
+        result = await grind(task_def)
+
+    assert result.status == GrindStatus.COMPLETE
+
+
+@pytest.mark.asyncio
+async def test_grind_signal_with_markdown_heading(mock_sdk_client):
+    """Test that signal with markdown heading formatting is detected."""
+    task_def = TaskDefinition(
+        task="Test task",
+        verify="echo test",
+        max_iterations=5,
+        model="sonnet",
+    )
+
+    # Signal as markdown heading - common model output
+    text_block = create_mock_text_block("Task complete!\n\n## GRIND_COMPLETE")
+    assistant_msg = create_mock_assistant_message([text_block])
+    result_msg = create_mock_result_message()
+
+    async def mock_receive():
+        yield assistant_msg
+        yield result_msg
+
+    mock_sdk_client.receive_response = mock_receive
+
+    with patch('grind.engine.ClaudeSDKClient', return_value=mock_sdk_client):
+        result = await grind(task_def)
+
+    assert result.status == GrindStatus.COMPLETE
+
+
+@pytest.mark.asyncio
+async def test_grind_signal_with_h1_heading(mock_sdk_client):
+    """Test that signal with H1 markdown heading is detected."""
+    task_def = TaskDefinition(
+        task="Test task",
+        verify="echo test",
+        max_iterations=5,
+        model="sonnet",
+    )
+
+    # Signal as H1 heading
+    text_block = create_mock_text_block("# GRIND_COMPLETE")
+    assistant_msg = create_mock_assistant_message([text_block])
+    result_msg = create_mock_result_message()
+
+    async def mock_receive():
+        yield assistant_msg
+        yield result_msg
+
+    mock_sdk_client.receive_response = mock_receive
+
+    with patch('grind.engine.ClaudeSDKClient', return_value=mock_sdk_client):
+        result = await grind(task_def)
+
+    assert result.status == GrindStatus.COMPLETE
+
+
+@pytest.mark.asyncio
+async def test_grind_signal_in_second_text_block(mock_sdk_client):
+    """Test that signal in second text block is detected with proper newline handling."""
+    task_def = TaskDefinition(
+        task="Test task",
+        verify="echo test",
+        max_iterations=5,
+        model="sonnet",
+    )
+
+    # First block ends without newline, second block starts with signal
+    # This tests the text block concatenation fix
+    text_block1 = create_mock_text_block("Working on the task...")
+    text_block2 = create_mock_text_block("GRIND_COMPLETE: Done")
+    assistant_msg = create_mock_assistant_message([text_block1, text_block2])
+    result_msg = create_mock_result_message()
+
+    async def mock_receive():
+        yield assistant_msg
+        yield result_msg
+
+    mock_sdk_client.receive_response = mock_receive
+
+    with patch('grind.engine.ClaudeSDKClient', return_value=mock_sdk_client):
+        result = await grind(task_def)
+
+    # Should detect GRIND_COMPLETE even in second block because we add newline
+    assert result.status == GrindStatus.COMPLETE
+    assert result.message == "Done"
+
+
+@pytest.mark.asyncio
+async def test_grind_signal_with_heading_and_message(mock_sdk_client):
+    """Test that signal with heading and colon message is detected."""
+    task_def = TaskDefinition(
+        task="Test task",
+        verify="echo test",
+        max_iterations=5,
+        model="sonnet",
+    )
+
+    # Heading with message after colon
+    text_block = create_mock_text_block("## GRIND_COMPLETE: All tests passed")
+    assistant_msg = create_mock_assistant_message([text_block])
+    result_msg = create_mock_result_message()
+
+    async def mock_receive():
+        yield assistant_msg
+        yield result_msg
+
+    mock_sdk_client.receive_response = mock_receive
+
+    with patch('grind.engine.ClaudeSDKClient', return_value=mock_sdk_client):
+        result = await grind(task_def)
+
+    assert result.status == GrindStatus.COMPLETE
+    assert result.message == "All tests passed"

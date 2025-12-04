@@ -2,7 +2,16 @@ from grind.batch import run_batch
 from grind.dag import DAGExecutor
 from grind.engine import decompose, grind
 from grind.hooks import execute_hooks, execute_slash_command
-from grind.logging import get_log_dir, get_log_file, get_logger, setup_logger
+from grind.logging import (
+    disable_logging,
+    enable_logging,
+    get_log_dir,
+    get_log_file,
+    get_logger,
+    reset_logger,
+    set_log_dir,
+    setup_logger,
+)
 from grind.models import (
     BatchResult,
     DAGResult,
@@ -18,6 +27,7 @@ from grind.models import (
 )
 from grind.prompts import CONTINUE_PROMPT, DECOMPOSE_PROMPT, GRIND_PROMPT, build_prompt
 from grind.tasks import build_task_graph, load_tasks, parse_task_from_yaml
+from grind.tui.main import run_tui
 from grind.utils import Color, print_batch_summary, print_result
 from grind.worktree import WorktreeError, WorktreeManager
 
@@ -43,6 +53,8 @@ __all__ = [
     "build_prompt",
     "build_task_graph",
     "decompose",
+    "disable_logging",
+    "enable_logging",
     "execute_hooks",
     "execute_slash_command",
     "get_log_dir",
@@ -53,6 +65,9 @@ __all__ = [
     "parse_task_from_yaml",
     "print_batch_summary",
     "print_result",
+    "reset_logger",
     "run_batch",
+    "run_tui",
+    "set_log_dir",
     "setup_logger",
 ]

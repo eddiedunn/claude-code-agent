@@ -16,7 +16,7 @@
         <link rel="prev" href="../using-with-claude-code/">
       
       
-        <link rel="next" href="../dag-execution/">
+        <link rel="next" href="../model-selection/">
       
       
         
@@ -899,6 +899,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#7-logging-and-telemetry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Logging and Telemetry
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -949,6 +960,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#debugging-with-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debugging with Logs
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -958,6 +980,90 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model-selection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../decompose/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Task Decomposition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TUI - Agent Orchestration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1123,6 +1229,34 @@
     
   
     Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/orchestration-vision/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Orchestration Vision
   
 
     
@@ -2035,6 +2169,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#7-logging-and-telemetry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Logging and Telemetry
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2085,6 +2230,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#debugging-with-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debugging with Logs
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2117,9 +2273,9 @@
 <h3 id="1-model-selection">1. Model Selection<a class="headerlink" href="#1-model-selection" title="Permanent link">&para;</a></h3>
 <p>Choose the right model for each task to optimize cost, speed, and quality.</p>
 <p><strong>Models Available</strong>:
-- <code>haiku</code> - Fast, cheap, good for simple tasks
-- <code>sonnet</code> - Balanced, best for most tasks (default)
-- <code>opus</code> - Powerful, expensive, for complex tasks</p>
+- <code>haiku</code> - Fast, cheap, good for simple tasks (default)
+- <code>sonnet</code> - Balanced, best for medium complexity tasks
+- <code>opus</code> - Powerful, expensive, for planning and architecture</p>
 <p><strong>Usage</strong>:
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">tasks</span><span class="p">:</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Fix</span><span class="nv"> </span><span class="s">linting</span><span class="nv"> </span><span class="s">errors&quot;</span>
@@ -2136,9 +2292,15 @@
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>grind.py<span class="w"> </span>run<span class="w"> </span>-t<span class="w"> </span><span class="s2">&quot;Fix tests&quot;</span><span class="w"> </span>-v<span class="w"> </span><span class="s2">&quot;pytest&quot;</span><span class="w"> </span>-m<span class="w"> </span>haiku
 </span></code></pre></div></p>
 <p><strong>Decision Guide</strong>:
-- <strong>Haiku</strong>: Linting, formatting, simple fixes, high volume
-- <strong>Sonnet</strong>: Bug fixes, refactoring, test fixes, general work
-- <strong>Opus</strong>: Architecture changes, security audits, complex logic</p>
+- <strong>Haiku</strong> (default): Linting, formatting, simple fixes, high volume
+- <strong>Sonnet</strong>: Bug fixes, refactoring, test fixes, medium complexity
+- <strong>Opus</strong>: Architecture changes, planning, security audits, complex logic</p>
+<p><strong>Pricing (December 2025)</strong>:
+| Model | Input (per 1M tokens) | Output (per 1M tokens) |
+|-------|----------------------|------------------------|
+| haiku | $0.25 | $1.25 |
+| sonnet | $3.00 | $15.00 |
+| opus | $15.00 | $75.00 |</p>
 <hr />
 <h3 id="2-slash-command-hooks">2. Slash Command Hooks<a class="headerlink" href="#2-slash-command-hooks" title="Permanent link">&para;</a></h3>
 <p>Execute custom slash commands at key lifecycle points.</p>
@@ -2420,9 +2582,9 @@
 <p>Don't add hooks and custom prompts until you need them. Start with basic tasks.</p>
 <h3 id="2-choose-models-wisely">2. Choose Models Wisely<a class="headerlink" href="#2-choose-models-wisely" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Use haiku for volume work (linting, formatting)</li>
-<li>Use sonnet as default (good balance)</li>
-<li>Use opus sparingly (expensive, slow, but powerful)</li>
+<li>Use haiku as default (fast, cheap, good for most simple tasks)</li>
+<li>Use sonnet for medium complexity work (bug fixes, refactoring)</li>
+<li>Use opus sparingly for planning/architecture (expensive, slow, but powerful)</li>
 </ul>
 <h3 id="3-use-decompose">3. Use Decompose<a class="headerlink" href="#3-use-decompose" title="Permanent link">&para;</a></h3>
 <p>For large problems, let Claude break it down:
@@ -2447,6 +2609,106 @@
 - Good: <code>pytest tests/ -v --tb=short</code>
 - Bad: <code>pytest</code> (no useful error output)</p>
 <hr />
+<h3 id="7-logging-and-telemetry">7. Logging and Telemetry<a class="headerlink" href="#7-logging-and-telemetry" title="Permanent link">&para;</a></h3>
+<p>Every grind session creates detailed logs for debugging and analysis.</p>
+<p><strong>Log Location</strong>:
+<div class="language-text highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>.grind/logs/
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>  20251130_142530_Fix_tests.log     # Human-readable text log
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>  20251130_142530_Fix_tests.jsonl   # Machine-parseable JSONL
+</span></code></pre></div></p>
+<p><strong>What's Logged</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Data Captured</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Session start</td>
+<td>Timestamp, working directory, Python version, platform</td>
+</tr>
+<tr>
+<td>Task start</td>
+<td>Task description, verify command, model, max iterations</td>
+</tr>
+<tr>
+<td>Tool calls</td>
+<td>Tool name, ID, full input parameters</td>
+</tr>
+<tr>
+<td>Tool results</td>
+<td>Tool name, ID, full output, error status</td>
+</tr>
+<tr>
+<td>Thinking blocks</td>
+<td>Claude's reasoning (when extended thinking enabled)</td>
+</tr>
+<tr>
+<td>SDK telemetry</td>
+<td>Duration, API time, token usage, cost</td>
+</tr>
+<tr>
+<td>Verify commands</td>
+<td>Command, exit code, stdout, stderr, duration</td>
+</tr>
+<tr>
+<td>Iteration end</td>
+<td>Tools used, text collected, duration</td>
+</tr>
+<tr>
+<td>Task result</td>
+<td>Status, iterations, duration, message</td>
+</tr>
+<tr>
+<td>Errors</td>
+<td>Error message, traceback availability</td>
+</tr>
+</tbody>
+</table>
+<p><strong>JSONL Events</strong>:</p>
+<p>The <code>.jsonl</code> file contains structured events for programmatic analysis:</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-11-30T14:25:30&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;session_start&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;working_directory&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/project&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">...</span><span class="p">}</span>
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-11-30T14:25:31&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;task_start&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;task&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Fix tests&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sonnet&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">...</span><span class="p">}</span>
+</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-11-30T14:25:32&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tool_use&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Read&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tool_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">...</span><span class="p">}</span>
+</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-11-30T14:25:33&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tool_result&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;tool_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Read&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;result_length&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1234</span><span class="p">,</span><span class="w"> </span><span class="err">...</span><span class="p">}</span>
+</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-11-30T14:25:40&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sdk_result&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;total_cost_usd&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.0012</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;usage&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="err">...</span><span class="p">},</span><span class="w"> </span><span class="err">...</span><span class="p">}</span>
+</span><span id="__span-24-6"><a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a><span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-11-30T14:25:45&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;verify_command&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;exit_code&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;success&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="err">...</span><span class="p">}</span>
+</span><span id="__span-24-7"><a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a><span class="p">{</span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-11-30T14:25:46&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;event&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;task_result&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;COMPLETE&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;iterations&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="err">...</span><span class="p">}</span>
+</span></code></pre></div>
+<p><strong>Analyzing Logs</strong>:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># View recent log</span>
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>cat<span class="w"> </span>.grind/logs/*.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-100
+</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>
+</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="c1"># See all tool calls</span>
+</span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>cat<span class="w"> </span>.grind/logs/*.jsonl<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;select(.event == &quot;tool_use&quot;) | .tool_name&#39;</span>
+</span><span id="__span-25-6"><a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>
+</span><span id="__span-25-7"><a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a><span class="c1"># Calculate total cost across sessions</span>
+</span><span id="__span-25-8"><a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a>cat<span class="w"> </span>.grind/logs/*.jsonl<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-s<span class="w"> </span><span class="s1">&#39;[.[] | select(.event == &quot;sdk_result&quot;) | .total_cost_usd // 0] | add&#39;</span>
+</span><span id="__span-25-9"><a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a>
+</span><span id="__span-25-10"><a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a><span class="c1"># Find failed verify commands</span>
+</span><span id="__span-25-11"><a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a>cat<span class="w"> </span>.grind/logs/*.jsonl<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;select(.event == &quot;verify_command&quot; and .success == false)&#39;</span>
+</span><span id="__span-25-12"><a id="__codelineno-25-12" name="__codelineno-25-12" href="#__codelineno-25-12"></a>
+</span><span id="__span-25-13"><a id="__codelineno-25-13" name="__codelineno-25-13" href="#__codelineno-25-13"></a><span class="c1"># Get token usage summary</span>
+</span><span id="__span-25-14"><a id="__codelineno-25-14" name="__codelineno-25-14" href="#__codelineno-25-14"></a>cat<span class="w"> </span>.grind/logs/*.jsonl<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;select(.event == &quot;sdk_result&quot;) | .usage&#39;</span>
+</span><span id="__span-25-15"><a id="__codelineno-25-15" name="__codelineno-25-15" href="#__codelineno-25-15"></a>
+</span><span id="__span-25-16"><a id="__codelineno-25-16" name="__codelineno-25-16" href="#__codelineno-25-16"></a><span class="c1"># Find errors</span>
+</span><span id="__span-25-17"><a id="__codelineno-25-17" name="__codelineno-25-17" href="#__codelineno-25-17"></a>cat<span class="w"> </span>.grind/logs/*.jsonl<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;select(.event == &quot;error&quot;)&#39;</span>
+</span></code></pre></div>
+<p><strong>Programmatic Access</strong>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">grind.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_log_file</span><span class="p">,</span> <span class="n">get_jsonl_file</span><span class="p">,</span> <span class="n">get_log_dir</span>
+</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>
+</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="c1"># Get current log paths</span>
+</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="n">log_file</span> <span class="o">=</span> <span class="n">get_log_file</span><span class="p">()</span>      <span class="c1"># Path to .log file</span>
+</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a><span class="n">jsonl_file</span> <span class="o">=</span> <span class="n">get_jsonl_file</span><span class="p">()</span>  <span class="c1"># Path to .jsonl file</span>
+</span><span id="__span-26-6"><a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a><span class="n">log_dir</span> <span class="o">=</span> <span class="n">get_log_dir</span><span class="p">()</span>        <span class="c1"># Path to .grind/logs/</span>
+</span><span id="__span-26-7"><a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a>
+</span><span id="__span-26-8"><a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a><span class="c1"># Disable JSON logging (text only)</span>
+</span><span id="__span-26-9"><a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">grind.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_json_logging</span>
+</span><span id="__span-26-10"><a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a><span class="n">set_json_logging</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+</span></code></pre></div>
+<hr />
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="task-gets-stuck">Task Gets Stuck<a class="headerlink" href="#task-gets-stuck" title="Permanent link">&para;</a></h3>
 <ul>
@@ -2468,8 +2730,19 @@
 <li>Use more powerful model</li>
 <li>Add hooks for intermediate checks</li>
 </ul>
+<h3 id="debugging-with-logs">Debugging with Logs<a class="headerlink" href="#debugging-with-logs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Check <code>.grind/logs/*.log</code> for full execution trace</li>
+<li>Use <code>.grind/logs/*.jsonl</code> for structured analysis</li>
+<li>Look for <code>tool_result</code> events to see what Claude saw</li>
+<li>Check <code>verify_command</code> events to see test output</li>
+<li>Review <code>sdk_result</code> for cost and token usage</li>
+</ul>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="c1"># Quick debug: see what happened in last run</span>
+</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>cat<span class="w"> </span>.grind/logs/*.jsonl<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;select(.event == &quot;error&quot; or .event == &quot;task_result&quot;)&#39;</span>
+</span></code></pre></div>
 <hr />
-<p><strong>Last Updated</strong>: 2025-11-28</p>
+<p><strong>Last Updated</strong>: 2025-11-30</p>
 
 
 

@@ -2,7 +2,7 @@ import argparse
 import subprocess
 import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import yaml
@@ -162,6 +162,7 @@ async def test_batch_command_loads_tasks_from_file():
                 total=2,
                 completed=2,
                 stuck=0,
+                max_iterations=0,
                 failed=0,
                 results=[],
                 duration_seconds=1.5
@@ -173,6 +174,126 @@ async def test_batch_command_loads_tasks_from_file():
             mock_load_tasks.assert_called_once_with(temp_file, None)
     finally:
         # Clean up the temporary file
+        Path(temp_file).unlink()
+
+
+@pytest.mark.asyncio
+async def test_batch_command_returns_zero_on_all_complete():
+    """Test batch command returns 0 when all tasks complete."""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        f.write("tasks:\n  - task: Test\n    verify: echo ok\n")
+        temp_file = f.name
+
+    try:
+        args = argparse.Namespace(
+            command="batch",
+            file=temp_file,
+            cwd=None,
+            verbose=False,
+            interactive=False,
+            stop_on_stuck=False,
+        )
+
+        with patch('grind.cli.load_tasks') as mock_load_tasks, \
+             patch('grind.cli.run_batch', new_callable=AsyncMock) as mock_run_batch:
+            mock_load_tasks.return_value = [TaskDefinition(task="T1", verify="echo ok")]
+            mock_run_batch.return_value = BatchResult(
+                total=1, completed=1, stuck=0, max_iterations=0, failed=0, results=[], duration_seconds=1.0
+            )
+
+            exit_code = await main_async(args)
+            assert exit_code == 0
+    finally:
+        Path(temp_file).unlink()
+
+
+@pytest.mark.asyncio
+async def test_batch_command_returns_two_on_stuck():
+    """Test batch command returns 2 when tasks get stuck."""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        f.write("tasks:\n  - task: Test\n    verify: echo ok\n")
+        temp_file = f.name
+
+    try:
+        args = argparse.Namespace(
+            command="batch",
+            file=temp_file,
+            cwd=None,
+            verbose=False,
+            interactive=False,
+            stop_on_stuck=False,
+        )
+
+        with patch('grind.cli.load_tasks') as mock_load_tasks, \
+             patch('grind.cli.run_batch', new_callable=AsyncMock) as mock_run_batch:
+            mock_load_tasks.return_value = [TaskDefinition(task="T1", verify="echo ok")]
+            mock_run_batch.return_value = BatchResult(
+                total=1, completed=0, stuck=1, max_iterations=0, failed=0, results=[], duration_seconds=1.0
+            )
+
+            exit_code = await main_async(args)
+            assert exit_code == 2
+    finally:
+        Path(temp_file).unlink()
+
+
+@pytest.mark.asyncio
+async def test_batch_command_returns_three_on_max_iterations():
+    """Test batch command returns 3 when tasks hit max iterations."""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        f.write("tasks:\n  - task: Test\n    verify: echo ok\n")
+        temp_file = f.name
+
+    try:
+        args = argparse.Namespace(
+            command="batch",
+            file=temp_file,
+            cwd=None,
+            verbose=False,
+            interactive=False,
+            stop_on_stuck=False,
+        )
+
+        with patch('grind.cli.load_tasks') as mock_load_tasks, \
+             patch('grind.cli.run_batch', new_callable=AsyncMock) as mock_run_batch:
+            mock_load_tasks.return_value = [TaskDefinition(task="T1", verify="echo ok")]
+            mock_run_batch.return_value = BatchResult(
+                total=1, completed=0, stuck=0, max_iterations=1, failed=0, results=[], duration_seconds=1.0
+            )
+
+            exit_code = await main_async(args)
+            assert exit_code == 3
+    finally:
+        Path(temp_file).unlink()
+
+
+@pytest.mark.asyncio
+async def test_batch_command_returns_one_on_error():
+    """Test batch command returns 1 when tasks fail with errors."""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        f.write("tasks:\n  - task: Test\n    verify: echo ok\n")
+        temp_file = f.name
+
+    try:
+        args = argparse.Namespace(
+            command="batch",
+            file=temp_file,
+            cwd=None,
+            verbose=False,
+            interactive=False,
+            stop_on_stuck=False,
+        )
+
+        with patch('grind.cli.load_tasks') as mock_load_tasks, \
+             patch('grind.cli.run_batch', new_callable=AsyncMock) as mock_run_batch:
+            mock_load_tasks.return_value = [TaskDefinition(task="T1", verify="echo ok")]
+            mock_run_batch.return_value = BatchResult(
+                total=1, completed=0, stuck=0, max_iterations=0, failed=1, results=[], duration_seconds=1.0
+            )
+
+            exit_code = await main_async(args)
+            assert exit_code == 1
+    finally:
         Path(temp_file).unlink()
 
 
@@ -279,3 +400,213 @@ tasks:
         result = run_grind("dag", "nonexistent.yaml")
 
         assert result.returncode != 0
+
+    @pytest.mark.asyncio
+    async def test_dag_returns_zero_on_all_complete(self, tmp_path):
+        """Test DAG command returns 0 when all tasks complete."""
+        yaml_content = """
+tasks:
+  - id: task1
+    task: "Task 1"
+    verify: "echo ok"
+"""
+        tasks_file = tmp_path / "tasks.yaml"
+        tasks_file.write_text(yaml_content)
+
+        args = argparse.Namespace(
+            command="dag",
+            tasks_file=str(tasks_file),
+            verbose=False,
+            dry_run=False,
+            parallel=1,
+            worktrees=False,
+            cleanup_worktrees=False,
+        )
+
+        from grind.models import DAGResult, GrindResult, GrindStatus
+
+        with patch('grind.tasks.build_task_graph') as mock_build, \
+             patch('grind.dag.DAGExecutor') as mock_executor_class:
+
+            mock_graph = MagicMock()
+            mock_build.return_value = mock_graph
+
+            mock_executor = MagicMock()
+            mock_executor_class.return_value = mock_executor
+
+            mock_executor.execute = AsyncMock(return_value=DAGResult(
+                total=1, completed=1, stuck=0, max_iterations=0, failed=0, blocked=0,
+                execution_order=["task1"], duration_seconds=1.0
+            ))
+
+            exit_code = await main_async(args)
+            assert exit_code == 0
+
+    @pytest.mark.asyncio
+    async def test_dag_returns_two_on_stuck(self, tmp_path):
+        """Test DAG command returns 2 when tasks get stuck."""
+        yaml_content = """
+tasks:
+  - id: task1
+    task: "Task 1"
+    verify: "echo ok"
+"""
+        tasks_file = tmp_path / "tasks.yaml"
+        tasks_file.write_text(yaml_content)
+
+        args = argparse.Namespace(
+            command="dag",
+            tasks_file=str(tasks_file),
+            verbose=False,
+            dry_run=False,
+            parallel=1,
+            worktrees=False,
+            cleanup_worktrees=False,
+        )
+
+        from grind.models import DAGResult, GrindResult, GrindStatus
+
+        with patch('grind.tasks.build_task_graph') as mock_build, \
+             patch('grind.dag.DAGExecutor') as mock_executor_class:
+
+            mock_graph = MagicMock()
+            mock_build.return_value = mock_graph
+
+            mock_executor = MagicMock()
+            mock_executor_class.return_value = mock_executor
+
+            mock_executor.execute = AsyncMock(return_value=DAGResult(
+                total=1, completed=0, stuck=1, max_iterations=0, failed=0, blocked=0,
+                execution_order=["task1"], duration_seconds=1.0
+            ))
+
+            exit_code = await main_async(args)
+            assert exit_code == 2
+
+    @pytest.mark.asyncio
+    async def test_dag_returns_three_on_max_iterations(self, tmp_path):
+        """Test DAG command returns 3 when tasks hit max iterations."""
+        yaml_content = """
+tasks:
+  - id: task1
+    task: "Task 1"
+    verify: "echo ok"
+"""
+        tasks_file = tmp_path / "tasks.yaml"
+        tasks_file.write_text(yaml_content)
+
+        args = argparse.Namespace(
+            command="dag",
+            tasks_file=str(tasks_file),
+            verbose=False,
+            dry_run=False,
+            parallel=1,
+            worktrees=False,
+            cleanup_worktrees=False,
+        )
+
+        from grind.models import DAGResult, GrindResult, GrindStatus
+
+        with patch('grind.tasks.build_task_graph') as mock_build, \
+             patch('grind.dag.DAGExecutor') as mock_executor_class:
+
+            mock_graph = MagicMock()
+            mock_build.return_value = mock_graph
+
+            mock_executor = MagicMock()
+            mock_executor_class.return_value = mock_executor
+
+            mock_executor.execute = AsyncMock(return_value=DAGResult(
+                total=1, completed=0, stuck=0, max_iterations=1, failed=0, blocked=0,
+                execution_order=["task1"], duration_seconds=1.0
+            ))
+
+            exit_code = await main_async(args)
+            assert exit_code == 3
+
+    @pytest.mark.asyncio
+    async def test_dag_returns_one_on_error(self, tmp_path):
+        """Test DAG command returns 1 when tasks fail with errors."""
+        yaml_content = """
+tasks:
+  - id: task1
+    task: "Task 1"
+    verify: "echo ok"
+"""
+        tasks_file = tmp_path / "tasks.yaml"
+        tasks_file.write_text(yaml_content)
+
+        args = argparse.Namespace(
+            command="dag",
+            tasks_file=str(tasks_file),
+            verbose=False,
+            dry_run=False,
+            parallel=1,
+            worktrees=False,
+            cleanup_worktrees=False,
+        )
+
+        from grind.models import DAGResult, GrindResult, GrindStatus
+
+        with patch('grind.tasks.build_task_graph') as mock_build, \
+             patch('grind.dag.DAGExecutor') as mock_executor_class:
+
+            mock_graph = MagicMock()
+            mock_build.return_value = mock_graph
+
+            mock_executor = MagicMock()
+            mock_executor_class.return_value = mock_executor
+
+            mock_executor.execute = AsyncMock(return_value=DAGResult(
+                total=1, completed=0, stuck=0, max_iterations=0, failed=1, blocked=0,
+                execution_order=["task1"], duration_seconds=1.0
+            ))
+
+            exit_code = await main_async(args)
+            assert exit_code == 1
+
+    @pytest.mark.asyncio
+    async def test_dag_returns_one_on_blocked(self, tmp_path):
+        """Test DAG command returns 1 when tasks are blocked."""
+        yaml_content = """
+tasks:
+  - id: task1
+    task: "Task 1"
+    verify: "echo ok"
+  - id: task2
+    task: "Task 2"
+    verify: "echo ok"
+    depends_on: [task1]
+"""
+        tasks_file = tmp_path / "tasks.yaml"
+        tasks_file.write_text(yaml_content)
+
+        args = argparse.Namespace(
+            command="dag",
+            tasks_file=str(tasks_file),
+            verbose=False,
+            dry_run=False,
+            parallel=1,
+            worktrees=False,
+            cleanup_worktrees=False,
+        )
+
+        from grind.models import DAGResult, GrindResult, GrindStatus
+
+        with patch('grind.tasks.build_task_graph') as mock_build, \
+             patch('grind.dag.DAGExecutor') as mock_executor_class:
+
+            mock_graph = MagicMock()
+            mock_build.return_value = mock_graph
+
+            mock_executor = MagicMock()
+            mock_executor_class.return_value = mock_executor
+
+            # Task 1 fails, task 2 gets blocked
+            mock_executor.execute = AsyncMock(return_value=DAGResult(
+                total=2, completed=0, stuck=0, max_iterations=0, failed=1, blocked=1,
+                execution_order=["task1"], duration_seconds=1.0
+            ))
+
+            exit_code = await main_async(args)
+            assert exit_code == 1

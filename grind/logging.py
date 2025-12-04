@@ -14,18 +14,100 @@ MAX_QUERY_LOG_LINES = 50
 
 _logger: logging.Logger | None = None
 _log_file: Path | None = None
+_jsonl_file: Path | None = None
+_log_dir_override: Path | None = None
+_logging_disabled: bool = False
+_json_logging_enabled: bool = True  # Enable JSON logging by default
+
+
+def disable_logging() -> None:
+    """Disable file logging. Useful for tests."""
+    global _logging_disabled
+    _logging_disabled = True
+
+
+def enable_logging() -> None:
+    """Re-enable file logging."""
+    global _logging_disabled
+    _logging_disabled = False
+
+
+def set_log_dir(path: Path | None) -> None:
+    """Set a custom log directory. Pass None to reset to default."""
+    global _log_dir_override
+    _log_dir_override = path
+
+
+def reset_logger() -> None:
+    """Reset the logger state. Call between tests for isolation."""
+    global _logger, _log_file, _jsonl_file
+    if _logger is not None:
+        for handler in _logger.handlers[:]:
+            handler.close()
+            _logger.removeHandler(handler)
+    _logger = None
+    _log_file = None
+    _jsonl_file = None
+
+
+def set_json_logging(enabled: bool) -> None:
+    """Enable or disable JSON logging."""
+    global _json_logging_enabled
+    _json_logging_enabled = enabled
+
+
+def _write_jsonl_event(event_type: str, data: dict[str, Any]) -> None:
+    """Write a structured event to the JSONL log file."""
+    if _jsonl_file is None:
+        return
+
+    event = {
+        "timestamp": datetime.now().isoformat(),
+        "event": event_type,
+        **data,
+    }
+
+    try:
+        with open(_jsonl_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(event, default=str) + "\n")
+    except Exception:
+        pass  # Don't let logging failures affect execution
+
+
+def get_jsonl_file() -> Path | None:
+    """Get the current JSONL log file path."""
+    return _jsonl_file
 
 
 def get_log_dir() -> Path:
     """Get the log directory, creating it if needed."""
-    log_dir = Path(os.getcwd()) / ".grind" / "logs"
+    if _log_dir_override is not None:
+        log_dir = _log_dir_override
+    else:
+        log_dir = Path(os.getcwd()) / ".grind" / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     return log_dir
 
 
+def _create_null_logger() -> logging.Logger:
+    """Create a logger that discards all output."""
+    logger = logging.getLogger("grind_null")
+    logger.setLevel(logging.CRITICAL + 1)
+    logger.handlers.clear()
+    logger.addHandler(logging.NullHandler())
+    return logger
+
+
 def setup_logger(task_name: str | None = None) -> logging.Logger:
     """Set up file logging for a grind session."""
-    global _logger, _log_file
+    global _logger, _log_file, _jsonl_file
+
+    # If logging is disabled, return a null logger
+    if _logging_disabled:
+        _logger = _create_null_logger()
+        _log_file = None
+        _jsonl_file = None
+        return _logger
 
     log_dir = get_log_dir()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -34,10 +116,13 @@ def setup_logger(task_name: str | None = None) -> logging.Logger:
     if task_name:
         safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in task_name[:30])
         filename = f"{timestamp}_{safe_name}.log"
+        jsonl_filename = f"{timestamp}_{safe_name}.jsonl"
     else:
         filename = f"{timestamp}_grind.log"
+        jsonl_filename = f"{timestamp}_grind.jsonl"
 
     _log_file = log_dir / filename
+    _jsonl_file = log_dir / jsonl_filename if _json_logging_enabled else None
 
     # Create logger
     _logger = logging.getLogger(f"grind_{timestamp}")
@@ -60,10 +145,23 @@ def setup_logger(task_name: str | None = None) -> logging.Logger:
     _logger.info("=" * 80)
     _logger.info(f"Timestamp: {datetime.now().isoformat()}")
     _logger.info(f"Log file: {_log_file}")
+    if _jsonl_file:
+        _logger.info(f"JSON log file: {_jsonl_file}")
     _logger.info(f"Working directory: {os.getcwd()}")
     _logger.info(f"Python: {sys.version}")
     _logger.info(f"Platform: {platform.platform()}")
     _logger.info("=" * 80)
+
+    # Write initial session event to JSONL
+    if _jsonl_file:
+        _write_jsonl_event("session_start", {
+            "timestamp": datetime.now().isoformat(),
+            "log_file": str(_log_file),
+            "jsonl_file": str(_jsonl_file),
+            "working_directory": os.getcwd(),
+            "python_version": sys.version,
+            "platform": platform.platform(),
+        })
 
     return _logger
 
@@ -105,6 +203,16 @@ def log_task_start(
     logger.info(f"Permission mode: {permission_mode or 'default'}")
     logger.info("#" * 80)
 
+    _write_jsonl_event("task_start", {
+        "task": task,
+        "verify": verify,
+        "model": model,
+        "max_iterations": max_iterations,
+        "cwd": cwd or os.getcwd(),
+        "allowed_tools": allowed_tools,
+        "permission_mode": permission_mode,
+    })
+
 
 def log_system_prompt(prompt: str) -> None:
     """Log the full system prompt being sent."""
@@ -141,6 +249,13 @@ def log_iteration_end(
     logger.info(f"  Duration: {duration_ms:.0f}ms")
     logger.info("-" * 40)
 
+    _write_jsonl_event("iteration_end", {
+        "iteration": iteration,
+        "tools_used": tools_used,
+        "text_length": text_length,
+        "duration_ms": duration_ms,
+    })
+
 
 def log_tool_use(tool_name: str, tool_id: str, tool_input: dict[str, Any]) -> None:
     """Log tool usage with full input details."""
@@ -164,22 +279,40 @@ def log_tool_use(tool_name: str, tool_id: str, tool_input: dict[str, Any]) -> No
     except Exception as e:
         logger.info(f"  Input: {tool_input} (serialization error: {e})")
 
+    _write_jsonl_event("tool_use", {
+        "tool_name": tool_name,
+        "tool_id": tool_id,
+        "tool_input": tool_input,
+    })
+
 
 def log_tool_result(tool_name: str, tool_id: str, result: str, is_error: bool = False) -> None:
-    """Log tool execution result."""
+    """Log tool execution result with full content."""
     logger = get_logger()
     status = "ERROR" if is_error else "OK"
     logger.info(f"TOOL RESULT [{status}]: {tool_name} ({tool_id})")
+    logger.info(f"  Result length: {len(result)} chars")
 
-    # Log full result
+    # Log full result at INFO level (important for debugging)
     if len(result) > RESULT_TRUNCATION_LIMIT:
-        logger.info(f"  Result (truncated, {len(result)} chars):")
+        logger.info(f"  Result (truncated at {RESULT_TRUNCATION_LIMIT} chars):")
         for line in result[:RESULT_TRUNCATION_LIMIT].split("\n"):
-            logger.debug(f"    {line}")
-        logger.info("    ... (truncated)")
+            logger.info(f"    {line}")
+        logger.info(f"    ... ({len(result) - RESULT_TRUNCATION_LIMIT} more chars)")
     else:
+        logger.info("  Result:")
         for line in result.split("\n"):
-            logger.debug(f"    {line}")
+            logger.info(f"    {line}")
+
+    truncated = len(result) > RESULT_TRUNCATION_LIMIT
+    _write_jsonl_event("tool_result", {
+        "tool_name": tool_name,
+        "tool_id": tool_id,
+        "result_length": len(result),
+        "is_error": is_error,
+        "result": result[:RESULT_TRUNCATION_LIMIT] if truncated else result,
+        "truncated": truncated,
+    })
 
 
 def log_text_block(text: str) -> None:
@@ -188,6 +321,56 @@ def log_text_block(text: str) -> None:
     logger.info("ASSISTANT TEXT:")
     for line in text.split("\n"):
         logger.info(f"  | {line}")
+
+
+def log_thinking_block(thinking: str) -> None:
+    """Log assistant thinking/reasoning block."""
+    logger = get_logger()
+    logger.info("ASSISTANT THINKING:")
+    logger.info(f"  Length: {len(thinking)} chars")
+    for line in thinking.split("\n"):
+        logger.info(f"  ~ {line}")
+
+
+def log_result_message(
+    duration_ms: int,
+    duration_api_ms: int,
+    is_error: bool,
+    num_turns: int,
+    session_id: str,
+    total_cost_usd: float | None,
+    usage: dict[str, Any] | None,
+) -> None:
+    """Log SDK result message with cost and usage telemetry."""
+    logger = get_logger()
+    logger.info("")
+    logger.info("=" * 60)
+    logger.info("SDK RESULT MESSAGE")
+    logger.info("=" * 60)
+    logger.info(f"  Session ID: {session_id}")
+    logger.info(f"  Duration (total): {duration_ms}ms ({duration_ms/1000:.2f}s)")
+    logger.info(f"  Duration (API): {duration_api_ms}ms ({duration_api_ms/1000:.2f}s)")
+    logger.info(f"  Num turns: {num_turns}")
+    logger.info(f"  Is error: {is_error}")
+
+    if total_cost_usd is not None:
+        logger.info(f"  Total cost: ${total_cost_usd:.6f}")
+
+    if usage:
+        logger.info("  Usage:")
+        for key, value in usage.items():
+            logger.info(f"    {key}: {value}")
+    logger.info("=" * 60)
+
+    _write_jsonl_event("sdk_result", {
+        "session_id": session_id,
+        "duration_ms": duration_ms,
+        "duration_api_ms": duration_api_ms,
+        "is_error": is_error,
+        "num_turns": num_turns,
+        "total_cost_usd": total_cost_usd,
+        "usage": usage,
+    })
 
 
 def log_completion_check(
@@ -229,6 +412,36 @@ def log_continue_prompt(iteration: int) -> None:
     logger.info(f"SENDING CONTINUE PROMPT for iteration {iteration + 1}")
 
 
+def log_interject_check(
+    context: str,
+    interactive_enabled: bool,
+    iteration: int,
+    max_iterations: int,
+    interject_requested: bool,
+    checkpoint_triggered: bool,
+) -> None:
+    """Log interject/checkpoint check with all conditions."""
+    logger = get_logger()
+    logger.info("")
+    logger.info("=" * 40)
+    logger.info(f"INTERJECT CHECK ({context})")
+    logger.info("=" * 40)
+    logger.info(f"  interactive.enabled: {interactive_enabled}")
+    logger.info(f"  iteration: {iteration} < max_iterations: {max_iterations}")
+    logger.info(f"  is_interject_requested(): {interject_requested}")
+    logger.info(f"  checkpoint_triggered: {checkpoint_triggered}")
+    logger.info("=" * 40)
+
+    _write_jsonl_event("interject_check", {
+        "context": context,
+        "interactive_enabled": interactive_enabled,
+        "iteration": iteration,
+        "max_iterations": max_iterations,
+        "interject_requested": interject_requested,
+        "checkpoint_triggered": checkpoint_triggered,
+    })
+
+
 def log_result(
     status: str, iterations: int, message: str, tools_used: list[str], duration: float
 ) -> None:
@@ -245,6 +458,14 @@ def log_result(
     logger.info(f"All tools used: {tools_used}")
     logger.info("#" * 80)
 
+    _write_jsonl_event("task_result", {
+        "status": status,
+        "iterations": iterations,
+        "duration_seconds": duration,
+        "message": message,
+        "tools_used": tools_used,
+    })
+
 
 def log_error(error: str, exc_info: bool = False) -> None:
     """Log an error with optional traceback."""
@@ -256,6 +477,11 @@ def log_error(error: str, exc_info: bool = False) -> None:
     if exc_info:
         logger.exception("Full traceback:")
     logger.error("!" * 80)
+
+    _write_jsonl_event("error", {
+        "error": error,
+        "has_traceback": exc_info,
+    })
 
 
 def log_hook_start(command: str, trigger: str, iteration: int) -> None:
@@ -315,3 +541,51 @@ def log_raw(level: str, message: str) -> None:
     logger = get_logger()
     log_fn = getattr(logger, level.lower(), logger.info)
     log_fn(message)
+
+
+def log_verify_command(
+    command: str,
+    cwd: str | None,
+    exit_code: int | None,
+    stdout: str,
+    stderr: str,
+    duration_ms: float,
+    error: str | None = None,
+) -> None:
+    """Log verification command execution with full output."""
+    logger = get_logger()
+    logger.info("")
+    logger.info("%" * 80)
+    logger.info("% VERIFY COMMAND")
+    logger.info("%" * 80)
+    logger.info(f"  Command: {command}")
+    logger.info(f"  CWD: {cwd or '(current)'}")
+    logger.info(f"  Duration: {duration_ms:.0f}ms")
+
+    if error:
+        logger.error(f"  Error: {error}")
+    else:
+        logger.info(f"  Exit code: {exit_code}")
+
+    if stdout:
+        logger.info(f"  STDOUT ({len(stdout)} chars):")
+        for line in stdout.split("\n"):
+            logger.info(f"    {line}")
+
+    if stderr:
+        logger.info(f"  STDERR ({len(stderr)} chars):")
+        for line in stderr.split("\n"):
+            logger.info(f"    {line}")
+
+    logger.info("%" * 80)
+
+    _write_jsonl_event("verify_command", {
+        "command": command,
+        "cwd": cwd,
+        "exit_code": exit_code,
+        "stdout_length": len(stdout),
+        "stderr_length": len(stderr),
+        "duration_ms": duration_ms,
+        "error": error,
+        "success": exit_code == 0 if exit_code is not None else False,
+    })

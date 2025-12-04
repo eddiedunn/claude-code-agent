@@ -1,0 +1,6 @@
+projectKey=grind-loop
+serverUrl=http://192.168.x.x:9200
+serverVersion=25.11.0.114957
+dashboardUrl=http://192.168.x.x:9200/dashboard?id=grind-loop
+ceTaskId=2c550294-7e8e-4173-a3f0-18c6249ef607
+ceTaskUrl=http://192.168.x.x:9200/api/ce/task?id=2c550294-7e8e-4173-a3f0-18c6249ef607

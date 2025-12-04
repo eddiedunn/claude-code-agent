@@ -5,7 +5,6 @@ Press 'i' during execution to trigger a checkpoint at the next iteration boundar
 """
 
 import atexit
-import logging
 import select
 import sys
 import termios
@@ -13,11 +12,9 @@ import threading
 import tty
 from dataclasses import dataclass, field
 
+from grind.logging import get_logger
 from grind.models import CheckpointAction
 from grind.utils import Color
-
-# Get logger for this module
-logger = logging.getLogger(__name__)
 
 # Keyboard listener poll interval in seconds
 KEYBOARD_POLL_INTERVAL = 0.1
@@ -51,13 +48,20 @@ class InterjectState:
     def request_interject(self) -> None:
         with self.lock:
             self.requested = True
+            get_logger().info(
+                f"INTERJECT: request_interject() called, requested={self.requested}"
+            )
 
     def clear_interject(self) -> None:
         with self.lock:
             self.requested = False
+            get_logger().info("INTERJECT: clear_interject() called, requested=False")
 
     def is_interject_requested(self) -> bool:
         with self.lock:
+            get_logger().debug(
+                f"INTERJECT: is_interject_requested() returning {self.requested}"
+            )
             return self.requested
 
 
@@ -85,7 +89,7 @@ def _keyboard_listener() -> None:
                     print(Color.warning(msg))
     except (OSError, ValueError) as e:
         # Terminal may be detached, closed, or in unexpected state during shutdown
-        logger.debug(f"Keyboard listener stopped due to terminal error: {e}")
+        get_logger().debug(f"Keyboard listener stopped due to terminal error: {e}")
 
 
 def _restore_terminal() -> None:
@@ -120,7 +124,7 @@ def start_keyboard_listener() -> None:
         _listener_thread.start()
     except (OSError, termios.error) as e:
         # Failed to start keyboard listener; interactive mode unavailable
-        logger.debug(f"Could not start keyboard listener: {e}")
+        get_logger().debug(f"Could not start keyboard listener: {e}")
         _interject_state.listener_active = False
 
 
@@ -168,29 +172,48 @@ def show_checkpoint_menu() -> None:
     print(Color.header("=" * 60))
 
 
-def get_checkpoint_input() -> tuple[CheckpointAction, str | None]:
-    """Get user input at checkpoint.
+def _restore_normal_terminal() -> None:
+    """Temporarily restore normal terminal mode for input."""
+    if _interject_state.original_settings and sys.stdin.isatty():
+        _safe_restore_terminal(sys.stdin, _interject_state.original_settings)
+
+
+def _restore_cbreak_mode() -> None:
+    """Restore cbreak mode for listener."""
+    if sys.stdin.isatty() and _interject_state.listener_active:
+        _safe_set_cbreak(sys.stdin.fileno())
+
+
+def _get_guidance_input(prompt: str) -> str:
+    """Get guidance text from user with proper terminal handling.
+
+    Args:
+        prompt: The prompt message to display
+
+    Returns:
+        The guidance text entered by the user (empty string if EOFError)
+    """
+    _restore_normal_terminal()
+    print(Color.info(prompt))
+    try:
+        guidance = input("> ").strip()
+    except EOFError:
+        guidance = ""
+    finally:
+        _restore_cbreak_mode()
+    return guidance
+
+
+def _parse_checkpoint_command(cmd: str, user_input: str) -> tuple[CheckpointAction, str | None]:
+    """Parse checkpoint command and return appropriate action.
+
+    Args:
+        cmd: The command character (lowercase)
+        user_input: The original user input
 
     Returns:
         Tuple of (action, optional guidance text)
     """
-    # Temporarily restore normal terminal mode for input
-    if _interject_state.original_settings and sys.stdin.isatty():
-        _safe_restore_terminal(sys.stdin, _interject_state.original_settings)
-
-    try:
-        user_input = input("> ").strip()
-    except EOFError:
-        return CheckpointAction.CONTINUE, None
-    finally:
-        # Restore cbreak mode for listener
-        if sys.stdin.isatty() and _interject_state.listener_active:
-            _safe_set_cbreak(sys.stdin.fileno())
-
-    if not user_input:
-        return CheckpointAction.CONTINUE, None
-
-    cmd = user_input.lower()
     if cmd == "a":
         return CheckpointAction.ABORT, None
     elif cmd == "s":
@@ -198,31 +221,32 @@ def get_checkpoint_input() -> tuple[CheckpointAction, str | None]:
     elif cmd == "v":
         return CheckpointAction.RUN_VERIFY, None
     elif cmd == "g":
-        # Temporarily restore normal mode for multi-line input
-        if _interject_state.original_settings and sys.stdin.isatty():
-            _safe_restore_terminal(sys.stdin, _interject_state.original_settings)
-        print(Color.info("Enter guidance (single line):"))
-        try:
-            guidance = input("> ").strip()
-        except EOFError:
-            guidance = ""
-        finally:
-            if sys.stdin.isatty() and _interject_state.listener_active:
-                _safe_set_cbreak(sys.stdin.fileno())
+        guidance = _get_guidance_input("Enter guidance (single line):")
         return CheckpointAction.GUIDANCE, guidance if guidance else None
     elif cmd == "p":
-        # Temporarily restore normal mode for multi-line input
-        if _interject_state.original_settings and sys.stdin.isatty():
-            _safe_restore_terminal(sys.stdin, _interject_state.original_settings)
-        print(Color.info("Enter persistent guidance (single line):"))
-        try:
-            guidance = input("> ").strip()
-        except EOFError:
-            guidance = ""
-        finally:
-            if sys.stdin.isatty() and _interject_state.listener_active:
-                _safe_set_cbreak(sys.stdin.fileno())
+        guidance = _get_guidance_input("Enter persistent guidance (single line):")
         return CheckpointAction.GUIDANCE_PERSIST, guidance if guidance else None
     else:
         # Treat any other input as one-shot guidance
         return CheckpointAction.GUIDANCE, user_input
+
+
+def get_checkpoint_input() -> tuple[CheckpointAction, str | None]:
+    """Get user input at checkpoint.
+
+    Returns:
+        Tuple of (action, optional guidance text)
+    """
+    _restore_normal_terminal()
+
+    try:
+        user_input = input("> ").strip()
+    except EOFError:
+        return CheckpointAction.CONTINUE, None
+    finally:
+        _restore_cbreak_mode()
+
+    if not user_input:
+        return CheckpointAction.CONTINUE, None
+
+    return _parse_checkpoint_command(user_input.lower(), user_input)

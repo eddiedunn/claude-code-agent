@@ -452,6 +452,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#model-selection-pricing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Selection &amp; Pricing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#quick-start" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -520,6 +531,34 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Documentation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#new-in-v20-december-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New in v2.0 (December 2025)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#core-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -826,6 +865,90 @@
   
   
     <li class="md-nav__item">
+      <a href="guide/model-selection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Selection
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="guide/decompose/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Task Decomposition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="tui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TUI - Agent Orchestration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="guide/dag-execution/" class="md-nav__link">
         
   
@@ -979,6 +1102,34 @@
     
   
     Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="architecture/orchestration-vision/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Orchestration Vision
   
 
     
@@ -1675,6 +1826,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#model-selection-pricing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Selection &amp; Pricing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#quick-start" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1743,6 +1905,34 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Documentation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#new-in-v20-december-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New in v2.0 (December 2025)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#core-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1828,7 +2018,10 @@
 
 
 <h1 id="grind-loop">Grind Loop<a class="headerlink" href="#grind-loop" title="Permanent link">&para;</a></h1>
-<p>Automated fix-verify loops powered by Claude AI agents.</p>
+<p>Automated fix-verify loops powered by Claude AI agents with intelligent model selection.</p>
+<blockquote>
+<p><strong>December 2025 Update:</strong> Now featuring Opus 4.5 decomposition, Haiku 4.5 by default, and intelligent cost-aware routing for 3-5x cost savings.</p>
+</blockquote>
 <h2 id="what-is-grind-loop">What is Grind Loop?<a class="headerlink" href="#what-is-grind-loop" title="Permanent link">&para;</a></h2>
 <p>Grind Loop is a tool that automates repetitive fix-verify cycles in software development. Instead of manually running tests, analyzing failures, making fixes, and repeating - you define the task once and let Claude handle the iteration.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Before: Hours of manual iteration</span>
@@ -1839,13 +2032,46 @@
 </span></code></pre></div>
 <h2 id="key-features">Key Features<a class="headerlink" href="#key-features" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Model Selection</strong>: Choose haiku/sonnet/opus per task for optimal cost/quality</li>
+<li><strong>Model Selection</strong>: haiku default for speed/cost, sonnet for medium complexity, opus for planning/architecture</li>
 <li><strong>Slash Command Hooks</strong>: Execute commands at key lifecycle points</li>
 <li><strong>Custom Prompts</strong>: Add domain-specific expertise to tasks</li>
 <li><strong>Task Decomposition</strong>: Automatically break large problems into subtasks</li>
 <li><strong>Batch Execution</strong>: Run multiple tasks sequentially</li>
 <li><strong>Context-Aware</strong>: <code>/generate-tasks</code> command analyzes conversation history</li>
 </ul>
+<h2 id="model-selection-pricing">Model Selection &amp; Pricing<a class="headerlink" href="#model-selection-pricing" title="Permanent link">&para;</a></h2>
+<p>Choose the right model for your task based on complexity and budget (December 2025 rates):</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Use Case</th>
+<th>Input (per 1M tokens)</th>
+<th>Output (per 1M tokens)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>haiku</strong> (default)</td>
+<td>Simple fixes, linting, formatting</td>
+<td>$0.25</td>
+<td>$1.25</td>
+</tr>
+<tr>
+<td><strong>sonnet</strong></td>
+<td>Bug fixes, refactoring, medium complexity</td>
+<td>$3.00</td>
+<td>$15.00</td>
+</tr>
+<tr>
+<td><strong>opus</strong></td>
+<td>Planning, architecture, complex logic</td>
+<td>$15.00</td>
+<td>$75.00</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Recommendation</strong>: Start with haiku for most tasks. Use sonnet for medium complexity work. Reserve opus for architectural decisions and complex planning tasks.</p>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <h3 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/eddiedunn/claude-code-agent
@@ -1876,12 +2102,18 @@
 </span></code></pre></div>
 <p>Clean, modular, single-responsibility design throughout.</p>
 <h2 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
+<h3 id="new-in-v20-december-2025">New in v2.0 (December 2025)<a class="headerlink" href="#new-in-v20-december-2025" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><a href="guide/model-selection/">Model Selection Guide</a></strong> - Haiku/Sonnet/Opus selection &amp; CostAwareRouter</li>
+<li><strong><a href="guide/decompose/">Task Decomposition Guide</a></strong> - Opus 4.5 with extended thinking</li>
+<li><strong><a href="MIGRATION/">Migration Guide</a></strong> - Upgrade from v1.x</li>
+</ul>
+<h3 id="core-documentation">Core Documentation<a class="headerlink" href="#core-documentation" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong><a href="getting-started/quickstart/">Getting Started</a></strong> - Installation and first steps</li>
 <li><strong><a href="guide/features/">User Guide</a></strong> - Complete feature reference</li>
 <li><strong><a href="architecture/overview/">Architecture</a></strong> - System design and principles</li>
 <li><strong><a href="sdk/overview/">SDK Reference</a></strong> - Claude Agent SDK documentation</li>
-<li><strong><a href="development/contributing.md">Development</a></strong> - Contributing guidelines</li>
 </ul>
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <h3 id="fix-test-failures">Fix Test Failures<a class="headerlink" href="#fix-test-failures" title="Permanent link">&para;</a></h3>

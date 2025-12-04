@@ -3,12 +3,14 @@
 
 tasks:
   # Basic task - just the essentials
+  # Using haiku for simple, straightforward linting fixes (fast and cost-effective)
   - task: "Fix ruff linting errors"
     verify: "ruff check ."
     model: haiku
     max_iterations: 5
 
   # Standard task with hooks
+  # Using sonnet for medium complexity tasks requiring debugging and logic fixes
   - task: "Fix failing unit tests"
     verify: "pytest tests/unit/ -v"
     model: sonnet
@@ -20,6 +22,7 @@ tasks:
         - "/test tests/unit/"
 
   # Complex task with custom prompt
+  # Using opus for complex architectural work requiring deep reasoning and design decisions
   - task: "Implement user authentication with OAuth"
     verify: "pytest tests/auth/ -v && ruff check . && mypy ."
     model: opus

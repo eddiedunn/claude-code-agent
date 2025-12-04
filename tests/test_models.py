@@ -134,7 +134,7 @@ class TestTaskDefinition:
 
         assert task.task == "Fix tests"
         assert task.verify == "pytest"
-        assert task.model == "sonnet"
+        assert task.model == "haiku"
         assert task.max_iterations == 10
         assert task.cwd is None
 
@@ -206,6 +206,7 @@ class TestBatchResult:
             total=2,
             completed=1,
             stuck=1,
+            max_iterations=0,
             failed=0,
             results=results,
             duration_seconds=25.0
@@ -214,6 +215,7 @@ class TestBatchResult:
         assert batch.total == 2
         assert batch.completed == 1
         assert batch.stuck == 1
+        assert batch.max_iterations == 0
         assert batch.failed == 0
         assert len(batch.results) == 2
         assert batch.duration_seconds == 25.0
@@ -339,6 +341,8 @@ class TestDAGResult:
         result = DAGResult(
             total=5,
             completed=3,
+            stuck=0,
+            max_iterations=0,
             failed=1,
             blocked=1,
             execution_order=["A", "B", "C", "D", "E"],
@@ -347,6 +351,8 @@ class TestDAGResult:
 
         assert result.total == 5
         assert result.completed == 3
+        assert result.stuck == 0
+        assert result.max_iterations == 0
         assert result.failed == 1
         assert result.blocked == 1
         assert result.duration_seconds == 10.5

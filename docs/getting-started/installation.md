@@ -94,4 +94,3 @@ uv run grind.py
 
 - [Quick Start Guide](quickstart.md) - Run your first task
 - [Features](../guide/features.md) - Learn all capabilities
-- [Examples](../guide/task-definitions.md) - See example tasks
