@@ -28,6 +28,12 @@ Footer {
 /* TabbedContent styling */
 TabbedContent {
     height: 1fr;
+    width: 1fr;
+}
+
+#main-tabs {
+    height: 1fr;
+    width: 1fr;
 }
 
 /* Tab bar appearance */
@@ -61,7 +67,9 @@ Tab.-active {
 
 /* Tab content padding */
 TabPane {
-    padding: 1;
+    height: 1fr;
+    width: 1fr;
+    padding: 0;
 }
 
 /* ListView styling for running agents */
@@ -207,12 +215,15 @@ StreamingLogViewer .log-timestamp {
 
 /* Shell styling - Terminal-like appearance */
 AgentShell {
-    height: 100%;
+    height: 1fr;
+    width: 1fr;
     background: $surface;
+    layout: vertical;
 }
 
 AgentShell #shell-output {
     height: 1fr;
+    width: 1fr;
     background: #1a1a2e;
     padding: 0 1;
     scrollbar-background: #1a1a2e;
@@ -221,14 +232,16 @@ AgentShell #shell-output {
     scrollbar-color-active: #8a8aaa;
 }
 
-AgentShell #shell-output Static {
-    background: transparent;
+AgentShell #output-text {
+    width: 1fr;
+    background: #1a1a2e;
     color: #e0e0e0;
 }
 
 /* Shell prompt - Green terminal style */
 AgentShell #prompt-container {
     height: auto;
+    width: 1fr;
     background: #1a1a2e;
     padding: 0 1;
 }

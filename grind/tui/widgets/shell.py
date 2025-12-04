@@ -32,30 +32,30 @@ class AgentShell(Container):
 
     DEFAULT_CSS = """
     AgentShell {
-        height: 100%;
-        width: 100%;
+        height: 1fr;
+        width: 1fr;
         background: #1a1a2e;
         layout: vertical;
     }
 
     AgentShell #shell-output {
         height: 1fr;
-        width: 100%;
+        width: 1fr;
         background: #1a1a2e;
         padding: 0 1;
         scrollbar-background: #1a1a2e;
         scrollbar-color: #4a4a6a;
     }
 
-    AgentShell #shell-output Static {
-        width: 100%;
+    AgentShell #output-text {
+        width: 1fr;
         background: transparent;
         color: #e0e0e0;
     }
 
     AgentShell #completions-popup {
         display: none;
-        width: 100%;
+        width: 1fr;
         height: auto;
         background: #2a2a4e;
         border: solid #4a4a6a;
@@ -69,7 +69,7 @@ class AgentShell(Container):
 
     AgentShell #prompt-container {
         height: auto;
-        width: 100%;
+        width: 1fr;
         background: #1a1a2e;
         padding: 0 1;
     }
@@ -164,6 +164,10 @@ class AgentShell(Container):
     async def on_key(self, event) -> None:
         """Handle key events for history and completion."""
         input_widget = self.query_one("#shell-input", Input)
+
+        # Allow app-level bindings (tab navigation 1-7, q to quit) to pass through
+        if event.key in ("1", "2", "3", "4", "5", "6", "7", "q"):
+            return
 
         # Only handle keys when input is focused
         if not input_widget.has_focus:

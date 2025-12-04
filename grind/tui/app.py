@@ -8,6 +8,7 @@ status bar, log streaming, and REPL shell.
 import asyncio
 import logging
 from datetime import datetime
+from pathlib import Path
 from typing import Iterator
 
 from textual.app import App, ComposeResult
@@ -53,7 +54,55 @@ class AgentTUI(App):
     """
 
     TITLE = "Grind - Agent Orchestration"
-    CSS_PATH = "styles/app.tcss"
+
+    DEFAULT_CSS = """
+    Screen {
+        layout: vertical;
+    }
+
+    Header {
+        height: auto;
+    }
+
+    Footer {
+        height: auto;
+    }
+
+    #status-bar {
+        height: 1;
+    }
+
+    #main-tabs {
+        height: 1fr;
+        width: 1fr;
+    }
+
+    #shell-container {
+        height: 1fr;
+        width: 1fr;
+        layout: vertical;
+    }
+
+    AgentShell {
+        height: 1fr;
+        width: 1fr;
+        layout: vertical;
+    }
+
+    AgentShell #shell-output {
+        height: 1fr;
+        width: 1fr;
+    }
+
+    AgentShell #prompt-container {
+        height: auto;
+        width: 1fr;
+    }
+
+    AgentShell #shell-input {
+        width: 1fr;
+    }
+    """
 
     # Bindings will be dynamically set based on TabRegistry
     BINDINGS = [
@@ -167,7 +216,7 @@ class AgentTUI(App):
         yield Header()
         yield AgentStatusBar(id="status-bar")
         yield EventHandler(event_bus=self.event_bus, id="event-handler")
-        with TabbedContent(initial="tab-agents"):
+        with TabbedContent(initial="tab-agents", id="main-tabs"):
             for tab in self.tab_registry.get_enabled_tabs():
                 with TabPane(tab.title, id=tab.id):
                     if tab.compose_fn:
@@ -210,10 +259,11 @@ class AgentTUI(App):
 
     def _compose_shell_tab(self) -> Iterator[ComposeResult]:
         """Compose content for the Shell tab."""
-        yield AgentShell(
-            id="agent-shell",
-            command_registry=self.command_registry,
-        )
+        with Container(id="shell-container"):
+            yield AgentShell(
+                id="agent-shell",
+                command_registry=self.command_registry,
+            )
 
     def _compose_metrics_tab(self) -> Iterator[ComposeResult]:
         """Compose content for the Metrics tab."""
