@@ -1,33 +1,27 @@
 /* Agent Orchestration TUI Styles */
 
-/* Color Variables - Dark Theme */
-$success: #00ff00;
-$error: #ff5555;
-$warning: #ffaa00;
-$info: #55aaff;
-$text-muted: #888888;
-
 /* Screen layout */
 Screen {
-    layout: grid;
-    grid-size: 1;
-    grid-rows: auto 1fr auto;
+    layout: vertical;
 }
 
 Header {
-    dock: top;
-    background: $primary;
+    height: auto;
+    background: $boost;
+    color: $text;
 }
 
 Footer {
-    dock: bottom;
+    height: auto;
+    background: $boost;
+    color: $text;
 }
 
 /* Status Bar */
 #status-bar {
-    dock: top;
     height: 1;
     background: $surface;
+    color: $text;
     padding: 0 1;
 }
 
@@ -42,7 +36,7 @@ TabbedContent > ContentSwitcher {
 }
 
 Tabs {
-    dock: top;
+    height: auto;
     background: $surface;
 }
 
@@ -55,12 +49,12 @@ Tab {
 }
 
 Tab:hover {
-    background: $surface-lighten-1;
+    background: $boost;
 }
 
 /* Active tab highlighting */
 Tab.-active {
-    background: $primary;
+    background: $accent;
     color: $text;
     text-style: bold;
 }
@@ -75,7 +69,7 @@ ListView {
     height: 1fr;
     background: $surface;
     scrollbar-background: $surface;
-    scrollbar-color: $primary;
+    scrollbar-color: $accent;
 }
 
 ListView > ListItem {
@@ -85,7 +79,7 @@ ListView > ListItem {
 
 /* Hover state for list items */
 ListView > ListItem:hover {
-    background: $surface-lighten-1;
+    background: $boost;
 }
 
 /* Selection highlighting */
@@ -107,7 +101,7 @@ DataTable {
 
 /* Header row styling */
 DataTable > .datatable--header {
-    background: $primary;
+    background: $boost;
     color: $text;
     text-style: bold;
 }
@@ -128,13 +122,13 @@ DataTable > .datatable--odd {
 }
 
 DataTable > .datatable--even {
-    background: $surface-darken-1;
+    background: $boost;
 }
 
 /* Scrollbar for DataTable */
 DataTable {
     scrollbar-background: $surface;
-    scrollbar-color: $primary;
+    scrollbar-color: $accent;
     scrollbar-color-hover: $accent;
     scrollbar-color-active: $accent;
 }
@@ -164,11 +158,11 @@ StreamingLogViewer .log-success {
 }
 
 StreamingLogViewer .log-info {
-    color: $info;
+    color: $accent;
 }
 
 StreamingLogViewer .log-timestamp {
-    color: #888888;
+    color: $text-muted;
 }
 
 /* Semantic colors for status */
