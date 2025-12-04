@@ -31,11 +31,13 @@ from grind.tui.core.session import AgentSession
 from grind.tui.core.shell_commands import CommandRegistry, ShellContext
 from grind.tui.core.tab_registry import TabConfig, TabRegistry
 from grind.tui.widgets.agent_controls import AgentControlPanel
+from grind.tui.widgets.agent_dashboard import AgentDashboard
 from grind.tui.widgets.agents_manager import CompletedAgentsManager, RunningAgentsManager
 from grind.tui.widgets.event_handler import EventHandler
 from grind.tui.widgets.log_viewer import StreamingLogViewer
 from grind.tui.widgets.metrics_view import MetricsView
 from grind.tui.widgets.shell import AgentShell
+from grind.tui.widgets.footer_shell import FooterShell
 from grind.tui.widgets.status_bar import AgentStatusBar
 
 logger = logging.getLogger(__name__)
@@ -106,13 +108,12 @@ class AgentTUI(App):
 
     # Bindings will be dynamically set based on TabRegistry
     BINDINGS = [
-        ("ctrl+1", "switch_agents", "Agents"),
-        ("ctrl+2", "switch_dag", "DAG"),
-        ("ctrl+3", "switch_running", "Running"),
-        ("ctrl+4", "switch_completed", "Completed"),
-        ("ctrl+5", "switch_logs", "Logs"),
-        ("ctrl+6", "switch_shell", "Shell"),
-        ("ctrl+7", "switch_metrics", "Metrics"),
+        ("ctrl+1", "switch_dag", "DAG"),
+        ("ctrl+2", "switch_running", "Running"),
+        ("ctrl+3", "switch_completed", "Completed"),
+        ("ctrl+4", "switch_logs", "Logs"),
+        ("ctrl+5", "switch_metrics", "Metrics"),
+        ("ctrl+grave_accent", "toggle_shell", "Shell"),
         ("ctrl+q", "quit", "Quit"),
     ]
 
@@ -129,6 +130,7 @@ class AgentTUI(App):
         self.command_registry = CommandRegistry()
 
         # Managers (initialized on mount)
+        self.agent_dashboard: AgentDashboard | None = None
         self.running_agents_manager: RunningAgentsManager | None = None
         self.completed_agents_manager: CompletedAgentsManager | None = None
         self.shell_context: ShellContext | None = None
@@ -146,18 +148,9 @@ class AgentTUI(App):
         self.tab_registry.register_many(
             [
                 TabConfig(
-                    id="tab-agents",
-                    title="Agents",
-                    key="1",
-                    action_name="switch_agents",
-                    binding_description="Agents",
-                    compose_fn=self._compose_agents_tab,
-                    category="agents",
-                ),
-                TabConfig(
                     id="tab-dag",
                     title="DAG",
-                    key="2",
+                    key="1",
                     action_name="switch_dag",
                     binding_description="DAG",
                     compose_fn=self._compose_dag_tab,
@@ -166,7 +159,7 @@ class AgentTUI(App):
                 TabConfig(
                     id="tab-running",
                     title="Running",
-                    key="3",
+                    key="2",
                     action_name="switch_running",
                     binding_description="Running",
                     compose_fn=self._compose_running_tab,
@@ -175,7 +168,7 @@ class AgentTUI(App):
                 TabConfig(
                     id="tab-completed",
                     title="Completed",
-                    key="4",
+                    key="3",
                     action_name="switch_completed",
                     binding_description="Completed",
                     compose_fn=self._compose_completed_tab,
@@ -184,25 +177,16 @@ class AgentTUI(App):
                 TabConfig(
                     id="tab-logs",
                     title="Logs",
-                    key="5",
+                    key="4",
                     action_name="switch_logs",
                     binding_description="Logs",
                     compose_fn=self._compose_logs_tab,
                     category="logs",
                 ),
                 TabConfig(
-                    id="tab-shell",
-                    title="Shell",
-                    key="6",
-                    action_name="switch_shell",
-                    binding_description="Shell",
-                    compose_fn=self._compose_shell_tab,
-                    category="tools",
-                ),
-                TabConfig(
                     id="tab-metrics",
                     title="Metrics",
-                    key="7",
+                    key="5",
                     action_name="switch_metrics",
                     binding_description="Metrics",
                     compose_fn=self._compose_metrics_tab,
@@ -216,33 +200,22 @@ class AgentTUI(App):
         yield Header()
         yield AgentStatusBar(id="status-bar")
         yield EventHandler(event_bus=self.event_bus, id="event-handler")
-        with TabbedContent(initial="tab-agents", id="main-tabs"):
+        with TabbedContent(initial="tab-dag", id="main-tabs"):
             for tab in self.tab_registry.get_enabled_tabs():
                 with TabPane(tab.title, id=tab.id):
                     if tab.compose_fn:
                         yield from tab.compose_fn()
                     else:
                         yield Static(f"Content for {tab.title}")
+        yield FooterShell(
+            id="footer-shell",
+            command_registry=self.command_registry,
+        )
         yield Footer()
 
-    def _compose_agents_tab(self) -> Iterator[ComposeResult]:
-        """Compose content for the Agents tab."""
-        with Container(classes="agent-overview"):
-            yield Static(
-                "[bold]Agent Overview[/bold]\n\n"
-                "Use the shell tab (press 6) to manage agents.\n"
-                "Commands: agents, spawn, cancel, pause, resume",
-                id="agents-overview",
-            )
-
     def _compose_dag_tab(self) -> Iterator[ComposeResult]:
-        """Compose content for the DAG tab."""
-        yield Static(
-            "[dim]DAG Visualization[/dim]\n\n"
-            "Task dependency graph will be displayed here\n"
-            "when tasks are loaded from a task file.",
-            id="dag-placeholder",
-        )
+        """Compose content for the DAG tab - now a unified agent dashboard."""
+        yield AgentDashboard(id="agent-dashboard")
 
     def _compose_running_tab(self) -> Iterator[ComposeResult]:
         """Compose content for the Running tab."""
@@ -257,14 +230,6 @@ class AgentTUI(App):
         """Compose content for the Logs tab."""
         yield StreamingLogViewer(id="log-viewer")
 
-    def _compose_shell_tab(self) -> Iterator[ComposeResult]:
-        """Compose content for the Shell tab."""
-        with Container(id="shell-container"):
-            yield AgentShell(
-                id="agent-shell",
-                command_registry=self.command_registry,
-            )
-
     def _compose_metrics_tab(self) -> Iterator[ComposeResult]:
         """Compose content for the Metrics tab."""
         yield MetricsView(id="metrics-view")
@@ -275,6 +240,17 @@ class AgentTUI(App):
         try:
             status_bar = self.query_one("#status-bar", AgentStatusBar)
             status_bar.update_status(agents=[], model=self.default_model)
+        except Exception:
+            pass
+
+        # Initialize agent dashboard
+        try:
+            self.agent_dashboard = self.query_one("#agent-dashboard", AgentDashboard)
+            self.agent_dashboard.on_spawn = self._handle_dashboard_spawn
+            self.agent_dashboard.on_pause = self._handle_dashboard_pause
+            self.agent_dashboard.on_resume = self._handle_dashboard_resume
+            self.agent_dashboard.on_cancel = self._handle_dashboard_cancel
+            self.agent_dashboard.on_clear = self._handle_dashboard_clear
         except Exception:
             pass
 
@@ -317,11 +293,11 @@ class AgentTUI(App):
             executor=self.executor,
         )
 
-        # Update shell widget with context
+        # Update footer shell widget with context
         try:
-            shell = self.query_one("#agent-shell", AgentShell)
-            shell.shell_context = self.shell_context
-            shell.command_registry = self.command_registry
+            footer_shell = self.query_one("#footer-shell", FooterShell)
+            footer_shell.shell_context = self.shell_context
+            footer_shell.command_registry = self.command_registry
         except Exception:
             pass
 
@@ -386,6 +362,10 @@ class AgentTUI(App):
         # Update status bar
         self._update_status_bar()
 
+        # Update dashboard
+        if self.agent_dashboard:
+            self.agent_dashboard.update_agents(self.session.agents)
+
         # Update managers
         if self.running_agents_manager:
             self.running_agents_manager.update(self.session.agents)
@@ -445,11 +425,65 @@ class AgentTUI(App):
             # Start the agent
             self.executor.start_agent(agent_id)
 
-    # Action methods for tab switching
-    def action_switch_agents(self) -> None:
-        """Switch to the Agents tab."""
-        self.query_one(TabbedContent).active = "tab-agents"
+    def _handle_dashboard_spawn(self) -> None:
+        """Handle spawn button press from AgentDashboard.
 
+        Creates a new agent from a default or interactive task definition.
+        """
+        # For now, log the action - can be enhanced to open a task creation dialog
+        logger.info("Dashboard spawn action triggered - not yet implemented")
+
+    def _handle_dashboard_pause(self) -> None:
+        """Handle pause button press from AgentDashboard.
+
+        Pauses all running agents.
+        """
+        logger.info("Dashboard pause action triggered")
+        for agent in self.session.agents:
+            if agent.status == AgentStatus.RUNNING:
+                # Pause functionality would need to be implemented in executor
+                logger.debug(f"Would pause agent {agent.agent_id}")
+
+    def _handle_dashboard_resume(self) -> None:
+        """Handle resume button press from AgentDashboard.
+
+        Resumes all paused agents.
+        """
+        logger.info("Dashboard resume action triggered")
+        for agent in self.session.agents:
+            if agent.status == AgentStatus.PAUSED:
+                # Resume functionality would need to be implemented in executor
+                logger.debug(f"Would resume agent {agent.agent_id}")
+
+    def _handle_dashboard_cancel(self) -> None:
+        """Handle cancel button press from AgentDashboard.
+
+        Cancels all running agents.
+        """
+        logger.info("Dashboard cancel action triggered")
+        for agent in self.session.agents:
+            if agent.status == AgentStatus.RUNNING:
+                self.run_worker(self.executor.cancel_agent(agent.agent_id))
+
+    def _handle_dashboard_clear(self) -> None:
+        """Handle clear button press from AgentDashboard.
+
+        Clears completed/failed/cancelled agents from the session.
+        """
+        logger.info("Dashboard clear action triggered")
+        # Filter out completed agents
+        self.session.agents = [
+            a for a in self.session.agents
+            if a.status not in (
+                AgentStatus.COMPLETE,
+                AgentStatus.FAILED,
+                AgentStatus.CANCELLED,
+            )
+        ]
+        # Update all views
+        self._on_agent_status_changed(self.session.agents[0] if self.session.agents else None)
+
+    # Action methods for tab switching
     def action_switch_dag(self) -> None:
         """Switch to the DAG tab."""
         self.query_one(TabbedContent).active = "tab-dag"
@@ -466,13 +500,11 @@ class AgentTUI(App):
         """Switch to the Logs tab."""
         self.query_one(TabbedContent).active = "tab-logs"
 
-    def action_switch_shell(self) -> None:
-        """Switch to the Shell tab."""
-        self.query_one(TabbedContent).active = "tab-shell"
-        # Focus the shell input after switching
+    def action_toggle_shell(self) -> None:
+        """Toggle the footer shell overlay."""
         try:
-            shell = self.query_one("#agent-shell", AgentShell)
-            shell.call_later(shell._focus_input)
+            footer_shell = self.query_one("#footer-shell", FooterShell)
+            footer_shell.toggle()
         except Exception:
             pass
 

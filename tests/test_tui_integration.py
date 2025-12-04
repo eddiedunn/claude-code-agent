@@ -119,19 +119,17 @@ def test_tui_initialization():
     assert app.tab_registry is not None
     assert app.log_streamer is not None
 
-    # Check tab registry has all 7 tabs
-    assert app.tab_registry.count_tabs() == 7
+    # Check tab registry has all 5 tabs (shell is now a footer overlay, not a tab)
+    assert app.tab_registry.count_tabs() == 5
 
     enabled_tabs = app.tab_registry.get_enabled_tabs()
-    assert len(enabled_tabs) == 7
+    assert len(enabled_tabs) == 5
 
     tab_ids = [t.id for t in enabled_tabs]
-    assert "tab-agents" in tab_ids
     assert "tab-dag" in tab_ids
     assert "tab-running" in tab_ids
     assert "tab-completed" in tab_ids
     assert "tab-logs" in tab_ids
-    assert "tab-shell" in tab_ids
     assert "tab-metrics" in tab_ids
 
     # Cleanup
@@ -263,3 +261,94 @@ async def test_metrics_display():
     empty_view = MetricsView()
     empty_output = empty_view.render()
     assert "No metrics collector configured" in empty_output
+
+
+@pytest.mark.asyncio
+async def test_dashboard_integration_with_grind_spawn():
+    '''Test TUI dashboard integration with grind spawn workflow.'''
+    from grind.models import TaskDefinition
+    from grind.tui.widgets.agent_dashboard import AgentDashboard
+    from grind.tui.widgets.footer_shell import FooterShell
+    from grind.tui.core.shell_commands import ShellContext
+
+    # Create TUI app
+    app = AgentTUI()
+
+    # Test dashboard initializes cleanly without buttons
+    dashboard = AgentDashboard()
+    assert dashboard is not None
+    assert dashboard.agents == []
+    assert hasattr(dashboard, "compose")
+    assert callable(dashboard.compose)
+
+    # Create a task and spawn an agent via grind spawn
+    task_def = TaskDefinition(
+        task="Integration test with dashboard",
+        verify="echo 'test'",
+        model="haiku",
+        max_iterations=3,
+    )
+
+    # Spawn agent using executor
+    agent = app.executor.create_agent(task_def)
+    assert agent is not None
+    assert agent.agent_id is not None
+
+    # Update dashboard with spawned agents
+    dashboard.update_agents(app.session.agents)
+    assert len(dashboard.agents) == 1
+    assert dashboard.agents[0].agent_id == agent.agent_id
+
+    # Test footer shell overlay (Ctrl+`)
+    shell = FooterShell()
+    assert shell is not None
+    assert hasattr(shell, "expand")
+    assert hasattr(shell, "collapse")
+    assert hasattr(shell, "toggle")
+
+    # Create shell context for command testing
+    context = ShellContext(
+        session=app.session,
+        agents=app.session.agents,
+        current_agent_id=agent.agent_id,
+        history=[],
+        variables={},
+        executor=app.executor,
+    )
+
+    # Test shell commands: help
+    from grind.tui.core.shell_commands import parse_and_execute, CommandRegistry
+    registry = CommandRegistry()
+    result = await parse_and_execute("help", registry, context)
+    assert "Available commands" in result
+
+    # Test shell commands: agents
+    result = await parse_and_execute("agents", registry, context)
+    assert agent.agent_id in result
+
+    # Test shell commands: spawn (create another agent)
+    result = await parse_and_execute("spawn", registry, context)
+    assert "spawn" in result.lower() or "created" in result.lower() or "usage" in result.lower()
+
+    # Verify agents display in dashboard when spawned
+    dashboard.agents = app.session.agents
+    assert len(dashboard.agents) >= 1
+
+    # Verify dashboard renders status correctly
+    status_overview = dashboard._render_status_overview()
+    assert status_overview is not None
+
+    # Test keyboard binding for shell toggle
+    bindings = app.BINDINGS
+    binding_keys = [b[0] for b in bindings]
+    assert "ctrl+grave_accent" in binding_keys
+
+    # Find the shell toggle binding and verify it maps to toggle_shell action
+    bindings_dict = {b[0]: b[1] for b in bindings}
+    assert bindings_dict["ctrl+grave_accent"] == "toggle_shell"
+
+    # Verify app has required shell toggle method
+    assert hasattr(app, "action_toggle_shell")
+
+    # Cleanup
+    app.session.cleanup()
