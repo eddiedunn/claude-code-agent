@@ -21,3 +21,8 @@ htmlcov/
 .DS_Store
 *.log
 coverage.xml
+
+# Track slash commands
+!.claude/
+!.claude/commands/
+!.claude/commands/*.md
