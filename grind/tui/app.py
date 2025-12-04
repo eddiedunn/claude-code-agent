@@ -213,7 +213,6 @@ class AgentTUI(App):
         yield AgentShell(
             id="agent-shell",
             command_registry=self.command_registry,
-            shell_context=self.shell_context,
         )
 
     def _compose_metrics_tab(self) -> Iterator[ComposeResult]:
@@ -222,6 +221,13 @@ class AgentTUI(App):
 
     def on_mount(self) -> None:
         """Handle application mount event."""
+        # Initialize status bar
+        try:
+            status_bar = self.query_one("#status-bar", AgentStatusBar)
+            status_bar.update_status(agents=[], model=self.default_model)
+        except Exception:
+            pass
+
         # Initialize managers with widget references
         try:
             running_list = self.query_one("#running-agents-list", ListView)

@@ -123,9 +123,6 @@ class AgentStatusBar(Static):
         Refresh counts without changing message or model.
 
         Useful for periodic updates. This is a convenience method
-        that calls update_status without any parameters to trigger
-        a re-render of the current state.
+        that manually triggers a re-render of the current state.
         """
-        # Simply trigger a re-render by not changing anything
-        # The reactive system will ensure the display is updated
-        pass
+        self.refresh()

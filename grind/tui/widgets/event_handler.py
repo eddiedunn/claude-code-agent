@@ -50,6 +50,12 @@ class EventHandler(Widget):
       Signature: (agent_info: AgentInfo) -> None
     """
 
+    DEFAULT_CSS = """
+    EventHandler {
+        display: none;
+    }
+    """
+
     def __init__(
         self,
         event_bus: EventBus,
