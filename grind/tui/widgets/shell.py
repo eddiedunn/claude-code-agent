@@ -165,10 +165,6 @@ class AgentShell(Container):
         """Handle key events for history and completion."""
         input_widget = self.query_one("#shell-input", Input)
 
-        # Allow app-level bindings (tab navigation 1-7, q to quit) to pass through
-        if event.key in ("1", "2", "3", "4", "5", "6", "7", "q"):
-            return
-
         # Only handle keys when input is focused
         if not input_widget.has_focus:
             return

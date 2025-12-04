@@ -106,14 +106,14 @@ class AgentTUI(App):
 
     # Bindings will be dynamically set based on TabRegistry
     BINDINGS = [
-        ("1", "switch_agents", "Agents"),
-        ("2", "switch_dag", "DAG"),
-        ("3", "switch_running", "Running"),
-        ("4", "switch_completed", "Completed"),
-        ("5", "switch_logs", "Logs"),
-        ("6", "switch_shell", "Shell"),
-        ("7", "switch_metrics", "Metrics"),
-        ("q", "quit", "Quit"),
+        ("ctrl+1", "switch_agents", "Agents"),
+        ("ctrl+2", "switch_dag", "DAG"),
+        ("ctrl+3", "switch_running", "Running"),
+        ("ctrl+4", "switch_completed", "Completed"),
+        ("ctrl+5", "switch_logs", "Logs"),
+        ("ctrl+6", "switch_shell", "Shell"),
+        ("ctrl+7", "switch_metrics", "Metrics"),
+        ("ctrl+q", "quit", "Quit"),
     ]
 
     def __init__(self):
