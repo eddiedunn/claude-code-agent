@@ -8,11 +8,9 @@ status bar, log streaming, and REPL shell.
 import asyncio
 import logging
 from datetime import datetime
-from pathlib import Path
 from typing import Iterator
 
 from textual.app import App, ComposeResult
-from textual.containers import Container
 from textual.widgets import (
     DataTable,
     Footer,
@@ -34,10 +32,9 @@ from grind.tui.widgets.agent_controls import AgentControlPanel
 from grind.tui.widgets.agent_dashboard import AgentDashboard
 from grind.tui.widgets.agents_manager import CompletedAgentsManager, RunningAgentsManager
 from grind.tui.widgets.event_handler import EventHandler
+from grind.tui.widgets.footer_shell import FooterShell
 from grind.tui.widgets.log_viewer import StreamingLogViewer
 from grind.tui.widgets.metrics_view import MetricsView
-from grind.tui.widgets.shell import AgentShell
-from grind.tui.widgets.footer_shell import FooterShell
 from grind.tui.widgets.status_bar import AgentStatusBar
 
 logger = logging.getLogger(__name__)

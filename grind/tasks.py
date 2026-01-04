@@ -66,7 +66,21 @@ def load_tasks(path: str, base_cwd: str | None = None) -> list[TaskDefinition]:
     """
     p = Path(path).resolve()
     content = p.read_text()
-    data = yaml.safe_load(content) if p.suffix in (".yaml", ".yml") else json.loads(content)
+
+    try:
+        data = yaml.safe_load(content) if p.suffix in (".yaml", ".yml") else json.loads(content)
+    except yaml.YAMLError as e:
+        error_msg = f"Failed to parse YAML file {path}"
+        if hasattr(e, 'problem_mark'):
+            mark = e.problem_mark
+            error_msg += f"\n  Error at line {mark.line + 1}, column {mark.column + 1}"
+        if hasattr(e, 'problem'):
+            error_msg += f"\n  {e.problem}"
+        if hasattr(e, 'context'):
+            error_msg += f"\n  {e.context}"
+        raise ValueError(error_msg) from e
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Failed to parse JSON file {path}: {e}") from e
 
     # Default base_cwd to tasks file's parent directory
     if base_cwd is None:

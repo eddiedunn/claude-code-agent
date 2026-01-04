@@ -13,9 +13,10 @@ from typing import Callable
 
 from textual.app import ComposeResult
 from textual.containers import Vertical
-from textual.widgets import Static, ListView
+from textual.widgets import ListView, Static
 
 from grind.tui.core.models import AgentInfo, AgentStatus
+
 from .list_items import AgentListItem
 
 logger = logging.getLogger(__name__)
@@ -115,7 +116,10 @@ class AgentDashboard(Vertical):
         completed = len([a for a in self.agents if a.status == AgentStatus.COMPLETE])
         failed = len([a for a in self.agents if a.status == AgentStatus.FAILED])
 
-        return f"Running: {running} | Pending: {pending} | Completed: {completed} | Failed: {failed}"
+        return (
+            f"Running: {running} | Pending: {pending} | "
+            f"Completed: {completed} | Failed: {failed}"
+        )
 
     def update_agents(self, agents: list[AgentInfo]) -> None:
         """

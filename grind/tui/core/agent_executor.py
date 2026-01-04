@@ -27,7 +27,9 @@ class AgentExecutor:
         }
         return mapping.get(orch_status, AgentStatus.FAILED)
 
-    def __init__(self, session: AgentSession, max_parallel: int = 3, event_bus: EventBus | None = None):
+    def __init__(
+        self, session: AgentSession, max_parallel: int = 3, event_bus: EventBus | None = None
+    ):
         """
         Initialize the agent executor.
 

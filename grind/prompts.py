@@ -17,7 +17,8 @@ Run this command to check success: `{verify_cmd}`
 5. Repeat until verification passes
 
 ## BEST PRACTICES (Claude 4.5 Agent Guidance)
-- **Strategic thinking**: Analyze the problem, consider multiple approaches, then choose the best path
+- **Strategic thinking**: Analyze the problem, consider multiple approaches, then choose the
+  best path
 - **tool orchestration**: Use multiple tools in parallel when possible to maximize efficiency
 - **Iterative refinement**: Start with working code, then improve through measured iterations
 - **Verify assumptions**: Test your understanding before making large changes
@@ -102,7 +103,12 @@ Before decomposing:
 ## OUTPUT FORMAT (JSON only, no markdown):
 {{
   "tasks": [
-    {{"task": "Description of what to fix", "verify": "verification command", "model": "haiku|sonnet|opus", "max_iterations": 5}}
+    {{
+      "task": "Description of what to fix",
+      "verify": "verification command",
+      "model": "haiku|sonnet|opus",
+      "max_iterations": 5
+    }}
   ]
 }}
 

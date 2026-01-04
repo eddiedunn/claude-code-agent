@@ -9,10 +9,17 @@ See docs/dag-execution-design.md for architecture details.
 
 import asyncio
 from datetime import datetime
-from typing import Callable
 from time import time
+from typing import Callable
 
 from grind.engine import grind
+from grind.logging import (
+    log_session_summary,
+    log_session_task_end,
+    log_session_task_start,
+    setup_session,
+    write_session_summary,
+)
 from grind.models import DAGResult, GrindResult, GrindStatus, TaskGraph, TaskNode
 from grind.orchestration.events import AgentEvent, EventBus, EventType
 from grind.worktree import WorktreeManager
@@ -237,13 +244,30 @@ class DAGExecutor:
                     timestamp=time(),
                 ))
 
+            # Log task start (use execution order index as task_index)
+            # Since tasks can run in parallel, we'll use a simple counter
+            log_session_task_start(
+                task_id=node.id,
+                task_name=node.task_def.task,
+                task_index=1  # Will be incremented by setup_logger
+            )
+
             if on_task_start:
                 on_task_start(node)
 
+            task_start_time = datetime.now()
             result = await grind(node.task_def, verbose=verbose)
+            task_duration = (datetime.now() - task_start_time).total_seconds()
             self.results[node.id] = result
 
             self._update_task_status(node, result)
+
+            # Log task end
+            log_session_task_end(
+                task_id=node.id,
+                status=result.status.value,
+                duration=task_duration
+            )
 
             # Cleanup worktree if needed
             if worktree_path and node.worktree and worktree_manager:
@@ -281,6 +305,7 @@ class DAGExecutor:
         use_worktrees: bool = False,
         on_task_start: Callable[[TaskNode], None] | None = None,
         on_task_complete: Callable[[TaskNode, GrindResult], None] | None = None,
+        task_file: str | None = None,
     ) -> DAGResult:
         """Execute all tasks in dependency order with optional parallelism.
 
@@ -290,10 +315,14 @@ class DAGExecutor:
             use_worktrees: Use Git worktrees for task isolation
             on_task_start: Called when a task begins
             on_task_complete: Called when a task finishes
+            task_file: Path to task file for session logging
 
         Returns:
             DAGResult with execution summary and per-task results
         """
+        # Setup session-based logging at the start
+        setup_session(task_file=task_file)
+
         start_time = datetime.now()
         execution_order: list[str] = []
         worktree_manager = WorktreeManager() if use_worktrees else None
@@ -331,6 +360,50 @@ class DAGExecutor:
             await asyncio.gather(*tasks)
 
         duration = (datetime.now() - start_time).total_seconds()
+
+        # Prepare task results for session summary
+        task_results = []
+        for task_id in execution_order:
+            node = self.graph.nodes[task_id]
+            result = self.results.get(task_id)
+            if result:
+                task_results.append({
+                    "id": task_id,
+                    "task": node.task_def.task,
+                    "status": result.status.value,
+                    "duration": result.duration_seconds,
+                    "iterations": result.iterations,
+                    "message": result.message or ""
+                })
+
+        # Add blocked tasks to results
+        for task_id in self.blocked:
+            node = self.graph.nodes[task_id]
+            result = self.results.get(task_id)
+            if result:
+                task_results.append({
+                    "id": task_id,
+                    "task": node.task_def.task,
+                    "status": result.status.value,
+                    "duration": 0,
+                    "iterations": result.iterations,
+                    "message": result.message or ""
+                })
+
+        # Write session summary and log it
+        write_session_summary(
+            task_file=task_file,
+            tasks=task_results,
+            total_duration=duration,
+            start_time=start_time
+        )
+        log_session_summary(
+            total=len(self.graph.nodes),
+            completed=len(self.completed),
+            stuck=len(self.stuck),
+            failed=len(self.failed) + len(self.max_iterations) + len(self.blocked),
+            duration=duration
+        )
 
         return DAGResult(
             total=len(self.graph.nodes),

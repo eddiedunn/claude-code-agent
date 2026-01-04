@@ -73,7 +73,9 @@ async def handle_batch_command(args: argparse.Namespace) -> int:
     if getattr(args, 'interactive', False):
         print(Color.info("Interactive mode: enabled"))
 
-    result = await run_batch(tasks, args.verbose, getattr(args, 'stop_on_stuck', False))
+    result = await run_batch(
+        tasks, args.verbose, getattr(args, 'stop_on_stuck', False), task_file=args.file
+    )
     print_batch_summary(result)
 
     # Return semantic exit codes per documentation
@@ -279,6 +281,7 @@ async def handle_dag_command(args: argparse.Namespace) -> int:
         use_worktrees=args.worktrees,
         on_task_start=on_start,
         on_task_complete=on_complete,
+        task_file=args.tasks_file,
     )
 
     _print_dag_summary(result)

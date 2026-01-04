@@ -19,6 +19,12 @@ _log_dir_override: Path | None = None
 _logging_disabled: bool = False
 _json_logging_enabled: bool = True  # Enable JSON logging by default
 
+# Session-level state management
+_session_dir: Path | None = None
+_task_counter: int = 0
+_session_logger: logging.Logger | None = None
+_session_jsonl_file: Path | None = None
+
 
 def disable_logging() -> None:
     """Disable file logging. Useful for tests."""
@@ -48,6 +54,19 @@ def reset_logger() -> None:
     _logger = None
     _log_file = None
     _jsonl_file = None
+
+
+def reset_session() -> None:
+    """Reset all session-level state. Call between tests for isolation."""
+    global _session_dir, _task_counter, _session_logger, _session_jsonl_file
+    if _session_logger is not None:
+        for handler in _session_logger.handlers[:]:
+            handler.close()
+            _session_logger.removeHandler(handler)
+    _session_dir = None
+    _task_counter = 0
+    _session_logger = None
+    _session_jsonl_file = None
 
 
 def set_json_logging(enabled: bool) -> None:
@@ -98,9 +117,17 @@ def _create_null_logger() -> logging.Logger:
     return logger
 
 
-def setup_logger(task_name: str | None = None) -> logging.Logger:
-    """Set up file logging for a grind session."""
-    global _logger, _log_file, _jsonl_file
+def setup_logger(task_name: str | None = None, task_index: int | None = None) -> logging.Logger:
+    """Set up file logging for a grind session.
+
+    Args:
+        task_name: Optional task name for log file naming
+        task_index: Optional explicit task index. If not provided, will auto-increment _task_counter
+
+    Returns:
+        Logger instance
+    """
+    global _logger, _log_file, _jsonl_file, _session_dir, _task_counter
 
     # If logging is disabled, return a null logger
     if _logging_disabled:
@@ -109,23 +136,33 @@ def setup_logger(task_name: str | None = None) -> logging.Logger:
         _jsonl_file = None
         return _logger
 
-    log_dir = get_log_dir()
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # If no session directory exists, create one
+    if _session_dir is None:
+        setup_session(task_desc=task_name or "task")
+
+    # Determine task index
+    if task_index is not None:
+        current_task_index = task_index
+    else:
+        _task_counter += 1
+        current_task_index = _task_counter
 
     # Sanitize task name for filename
     if task_name:
         safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in task_name[:30])
-        filename = f"{timestamp}_{safe_name}.log"
-        jsonl_filename = f"{timestamp}_{safe_name}.jsonl"
     else:
-        filename = f"{timestamp}_grind.log"
-        jsonl_filename = f"{timestamp}_grind.jsonl"
+        safe_name = "task"
 
-    _log_file = log_dir / filename
-    _jsonl_file = log_dir / jsonl_filename if _json_logging_enabled else None
+    # Create log files in session directory with task counter
+    filename = f"{current_task_index:02d}_{safe_name}.log"
+    jsonl_filename = f"{current_task_index:02d}_{safe_name}.jsonl"
+
+    _log_file = _session_dir / filename
+    _jsonl_file = _session_dir / jsonl_filename if _json_logging_enabled else None
 
     # Create logger
-    _logger = logging.getLogger(f"grind_{timestamp}")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    _logger = logging.getLogger(f"grind_{timestamp}_{current_task_index}")
     _logger.setLevel(logging.DEBUG)
     _logger.handlers.clear()
 
@@ -589,3 +626,292 @@ def log_verify_command(
         "error": error,
         "success": exit_code == 0 if exit_code is not None else False,
     })
+
+
+def sanitize(name: str) -> str:
+    """Replace non-alphanumeric characters with underscores."""
+    return "".join(c if c.isalnum() else "_" for c in name)
+
+
+def setup_session(task_file: str | None = None, task_desc: str | None = None) -> Path:
+    """
+    Set up a session directory for logging multiple tasks.
+
+    Args:
+        task_file: Optional path to a task file (used for naming)
+        task_desc: Optional task description (used for naming if no file)
+
+    Returns:
+        Path to the created session directory
+    """
+    global _session_dir, _task_counter, _session_logger, _session_jsonl_file
+
+    # Reset task counter
+    _task_counter = 0
+
+    # Generate timestamp
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+
+    # Determine directory name
+    if task_file:
+        dir_name = f"{timestamp}_{Path(task_file).stem}"
+    else:
+        sanitized_desc = sanitize(task_desc)[:30] if task_desc else "session"
+        dir_name = f"{timestamp}_single_{sanitized_desc}"
+
+    # Create session directory
+    _session_dir = get_log_dir() / dir_name
+    _session_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create session log files
+    session_log_file = _session_dir / "session.log"
+    _session_jsonl_file = _session_dir / "session.jsonl"
+
+    # Set up session logger
+    _session_logger = logging.getLogger(f"grind_session_{timestamp}")
+    _session_logger.setLevel(logging.DEBUG)
+    _session_logger.handlers.clear()
+
+    # File handler for session.log
+    file_handler = logging.FileHandler(session_log_file, encoding="utf-8")
+    file_handler.setLevel(logging.DEBUG)
+    file_format = logging.Formatter(
+        "%(asctime)s.%(msecs)03d | %(levelname)-8s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
+    file_handler.setFormatter(file_format)
+    _session_logger.addHandler(file_handler)
+
+    # Write session_start event to session.jsonl
+    session_start_event = {
+        "timestamp": datetime.now().isoformat(),
+        "event": "session_start",
+        "session_dir": str(_session_dir),
+        "task_file": task_file,
+        "task_desc": task_desc,
+    }
+
+    try:
+        with open(_session_jsonl_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(session_start_event, default=str) + "\n")
+    except Exception:
+        pass  # Don't let logging failures affect execution
+
+    return _session_dir
+
+
+def get_session_dir() -> Path | None:
+    """Get the current session directory."""
+    return _session_dir
+
+
+def log_session_task_start(task_id: str, task_name: str, task_index: int) -> None:
+    """
+    Log to session.log that a task is starting and write event to session.jsonl.
+
+    Args:
+        task_id: Unique identifier for the task
+        task_name: Human-readable task name
+        task_index: Index of the task in the session (1-based)
+    """
+    if _session_logger is None:
+        return
+
+    _session_logger.info("")
+    _session_logger.info("=" * 80)
+    _session_logger.info(f"TASK {task_index} START: {task_name}")
+    _session_logger.info("=" * 80)
+    _session_logger.info(f"  Task ID: {task_id}")
+    _session_logger.info(f"  Task name: {task_name}")
+    _session_logger.info(f"  Task index: {task_index}")
+    _session_logger.info("=" * 80)
+
+    # Write event to session.jsonl
+    if _session_jsonl_file is not None:
+        event = {
+            "timestamp": datetime.now().isoformat(),
+            "event": "task_start",
+            "task_id": task_id,
+            "task_name": task_name,
+            "task_index": task_index,
+        }
+        try:
+            with open(_session_jsonl_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(event, default=str) + "\n")
+        except Exception:
+            pass  # Don't let logging failures affect execution
+
+
+def log_session_task_end(task_id: str, status: str, duration: float) -> None:
+    """
+    Log to session.log that a task finished and write event to session.jsonl.
+
+    Args:
+        task_id: Unique identifier for the task
+        status: Final status of the task (e.g., 'complete', 'stuck', 'error')
+        duration: Duration of the task in seconds
+    """
+    if _session_logger is None:
+        return
+
+    _session_logger.info("")
+    _session_logger.info("=" * 80)
+    _session_logger.info(f"TASK END: {task_id}")
+    _session_logger.info("=" * 80)
+    _session_logger.info(f"  Task ID: {task_id}")
+    _session_logger.info(f"  Status: {status}")
+    _session_logger.info(f"  Duration: {duration:.2f}s")
+    _session_logger.info("=" * 80)
+
+    # Write event to session.jsonl
+    if _session_jsonl_file is not None:
+        event = {
+            "timestamp": datetime.now().isoformat(),
+            "event": "task_end",
+            "task_id": task_id,
+            "status": status,
+            "duration": duration,
+        }
+        try:
+            with open(_session_jsonl_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(event, default=str) + "\n")
+        except Exception:
+            pass  # Don't let logging failures affect execution
+
+
+def log_session_summary(
+    total: int, completed: int, stuck: int, failed: int, duration: float
+) -> None:
+    """
+    Write final summary to session.log and session_end event to session.jsonl.
+
+    Args:
+        total: Total number of tasks
+        completed: Number of completed tasks
+        stuck: Number of stuck tasks
+        failed: Number of failed tasks
+        duration: Total session duration in seconds
+    """
+    if _session_logger is None:
+        return
+
+    _session_logger.info("")
+    _session_logger.info("#" * 80)
+    _session_logger.info("# SESSION SUMMARY")
+    _session_logger.info("#" * 80)
+    _session_logger.info(f"  Total tasks: {total}")
+    _session_logger.info(f"  Completed: {completed}")
+    _session_logger.info(f"  Stuck: {stuck}")
+    _session_logger.info(f"  Failed: {failed}")
+    _session_logger.info(f"  Total duration: {duration:.2f}s")
+    if _session_dir:
+        _session_logger.info(f"  Session directory: {_session_dir}")
+    _session_logger.info("#" * 80)
+
+    # Write session_end event to session.jsonl
+    if _session_jsonl_file is not None:
+        event = {
+            "timestamp": datetime.now().isoformat(),
+            "event": "session_end",
+            "total": total,
+            "completed": completed,
+            "stuck": stuck,
+            "failed": failed,
+            "duration": duration,
+        }
+        try:
+            with open(_session_jsonl_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(event, default=str) + "\n")
+        except Exception:
+            pass  # Don't let logging failures affect execution
+
+
+def write_session_summary(
+    task_file: str | None,
+    tasks: list[dict],
+    total_duration: float,
+    start_time: datetime,
+) -> Path:
+    """
+    Write a markdown session summary to summary.md in the session directory.
+
+    Args:
+        task_file: Optional path to task file (used in header)
+        tasks: List of task dictionaries with keys: id, task, status, duration, iterations, message
+        total_duration: Total session duration in seconds
+        start_time: Session start time
+
+    Returns:
+        Path to the created summary.md file
+    """
+    if _session_dir is None:
+        raise RuntimeError("No session directory set. Call setup_session() first.")
+
+    summary_path = _session_dir / "summary.md"
+
+    # Format duration as human-readable (e.g., "5m 32s")
+    def format_duration(seconds: float) -> str:
+        mins = int(seconds // 60)
+        secs = int(seconds % 60)
+        if mins > 0:
+            return f"{mins}m {secs}s"
+        else:
+            return f"{secs}s"
+
+    # Count statuses
+    status_counts: dict[str, int] = {}
+    for task in tasks:
+        status = task.get("status", "UNKNOWN")
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    # Ensure common statuses are present even if count is 0
+    for status in ["COMPLETE", "STUCK", "ERROR", "MAX_ITERATIONS"]:
+        if status not in status_counts:
+            status_counts[status] = 0
+
+    # Build markdown content
+    lines = [
+        "# Grind Session Summary",
+        "",
+        f"**Started:** {start_time.strftime('%Y-%m-%d %H:%M:%S')}",
+        f"**Duration:** {format_duration(total_duration)}",
+        f"**Task File:** {task_file or 'N/A'}",
+        "",
+        "## Results",
+        "",
+        "| Status | Count |",
+        "|--------|-------|",
+    ]
+
+    # Add status counts to table
+    for status in sorted(status_counts.keys()):
+        count = status_counts[status]
+        lines.append(f"| {status} | {count} |")
+
+    lines.extend([
+        "",
+        "## Tasks",
+        "",
+    ])
+
+    # Add individual task details
+    for i, task in enumerate(tasks, 1):
+        task_name = task.get("task", "unknown")
+        status = task.get("status", "UNKNOWN")
+        iterations = task.get("iterations", 0)
+        duration = task.get("duration", 0.0)
+        message = task.get("message", "")
+
+        lines.extend([
+            f"### {i}. {task_name}",
+            f"- **Status:** {status}",
+            f"- **Iterations:** {iterations}",
+            f"- **Duration:** {format_duration(duration)}",
+            f"- **Message:** {message}",
+            "",
+        ])
+
+    # Write to file
+    summary_path.write_text("\n".join(lines), encoding="utf-8")
+
+    return summary_path

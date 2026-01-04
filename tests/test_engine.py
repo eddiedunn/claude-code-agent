@@ -667,3 +667,76 @@ async def test_grind_signal_with_heading_and_message(mock_sdk_client):
 
     assert result.status == GrindStatus.COMPLETE
     assert result.message == "All tests passed"
+
+
+class TestGetGitAuthorEnv:
+    """Tests for _get_git_author_env function."""
+
+    def test_returns_git_config_values(self):
+        """Test that git config values are returned."""
+        from grind.engine import _get_git_author_env
+
+        with patch('subprocess.run') as mock_run:
+            mock_run.side_effect = [
+                MagicMock(returncode=0, stdout="Test User\n"),
+                MagicMock(returncode=0, stdout="test@example.com\n"),
+            ]
+
+            env = _get_git_author_env()
+
+            assert env["GIT_AUTHOR_NAME"] == "Test User"
+            assert env["GIT_COMMITTER_NAME"] == "Test User"
+            assert env["GIT_AUTHOR_EMAIL"] == "test@example.com"
+            assert env["GIT_COMMITTER_EMAIL"] == "test@example.com"
+
+    def test_returns_empty_when_git_not_configured(self):
+        """Test that empty dict is returned when git config fails."""
+        from grind.engine import _get_git_author_env
+
+        with patch('subprocess.run') as mock_run:
+            mock_run.return_value = MagicMock(returncode=1, stdout="")
+
+            env = _get_git_author_env()
+
+            assert env == {}
+
+    def test_handles_git_timeout(self):
+        """Test that timeout is handled gracefully."""
+        from subprocess import TimeoutExpired
+
+        from grind.engine import _get_git_author_env
+
+        with patch('subprocess.run') as mock_run:
+            mock_run.side_effect = TimeoutExpired("git", 5)
+
+            env = _get_git_author_env()
+
+            assert env == {}
+
+    def test_handles_missing_git(self):
+        """Test that missing git binary is handled gracefully."""
+        from grind.engine import _get_git_author_env
+
+        with patch('subprocess.run') as mock_run:
+            mock_run.side_effect = FileNotFoundError()
+
+            env = _get_git_author_env()
+
+            assert env == {}
+
+    def test_handles_partial_config(self):
+        """Test that partial git config (only name) works."""
+        from grind.engine import _get_git_author_env
+
+        with patch('subprocess.run') as mock_run:
+            mock_run.side_effect = [
+                MagicMock(returncode=0, stdout="Test User\n"),
+                MagicMock(returncode=1, stdout=""),  # email not configured
+            ]
+
+            env = _get_git_author_env()
+
+            assert env["GIT_AUTHOR_NAME"] == "Test User"
+            assert env["GIT_COMMITTER_NAME"] == "Test User"
+            assert "GIT_AUTHOR_EMAIL" not in env
+            assert "GIT_COMMITTER_EMAIL" not in env

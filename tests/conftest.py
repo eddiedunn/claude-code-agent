@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from grind.logging import disable_logging, enable_logging, reset_logger
+from grind.logging import disable_logging, enable_logging, reset_logger, reset_session
 
 
 @pytest.fixture(autouse=True)
@@ -12,8 +12,10 @@ def isolate_logging():
     """Disable file logging during tests to prevent polluting .grind/logs/."""
     disable_logging()
     reset_logger()
+    reset_session()
     yield
     reset_logger()
+    reset_session()
     enable_logging()
 
 

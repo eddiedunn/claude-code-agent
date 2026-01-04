@@ -145,7 +145,10 @@ class TaskDefinition:
         if self.max_turns < 1:
             errors.append(f"max_turns must be >= 1, got {self.max_turns}")
         if not isinstance(self.enable_interleaved_thinking, bool):
-            errors.append(f"enable_interleaved_thinking must be a boolean, got {type(self.enable_interleaved_thinking).__name__}")
+            errors.append(
+                f"enable_interleaved_thinking must be a boolean, "
+                f"got {type(self.enable_interleaved_thinking).__name__}"
+            )
         return errors
 
 

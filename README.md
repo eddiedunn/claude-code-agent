@@ -128,6 +128,52 @@ uv run grind tui -t tasks.yaml
 
 Navigate tabs with 1-6 keys. Use tab 6 (Shell) for interactive commands.
 
+## Merging Task Branches
+
+After running DAG tasks with worktrees, you'll have multiple branches with fixes. Use the intelligent merge command to combine them:
+
+```bash
+# Interactive merge with conflict resolution
+uv run grind merge
+
+# Merge specific branches
+uv run grind merge fix/lint fix/tests fix/types
+
+# Custom pattern
+uv run grind merge --pattern "feature/*,bugfix/*"
+
+# With post-merge verification
+uv run grind merge --verify "pytest && ruff check"
+
+# Dry run (see what would be merged)
+uv run grind merge --dry-run
+```
+
+**What makes this smart:**
+- ✓ Merges clean branches automatically
+- ⚠️ Prompts only when conflicts occur
+- 💾 Creates backup and staging branches (never touches main directly)
+- 🧪 Runs verification after merging
+- 📊 Shows clear summary with next steps
+
+**Conflict resolution options:**
+When conflicts occur, you'll be prompted:
+1. Show diff (investigate the conflict)
+2. Keep ours (discard their changes)
+3. Keep theirs (accept their changes)
+4. Skip this branch (handle manually later)
+5. Abort entire merge
+
+**After merging:**
+```bash
+# Review the merged result
+git diff main..grind-merge-20251207-1430
+
+# If satisfied, merge to main
+git checkout main
+git merge grind-merge-20251207-1430 --ff-only
+```
+
 ## Real-World Examples
 
 ### Fix All Failing Tests

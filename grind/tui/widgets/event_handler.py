@@ -106,8 +106,12 @@ class EventHandler(Widget):
             iteration=data.get("iteration", 0),
             max_iterations=data.get("max_iterations", 5),
             progress=0.0,
-            created_at=datetime.fromtimestamp(event.timestamp) if event.timestamp else datetime.now(),
-            started_at=datetime.fromtimestamp(event.timestamp) if event.timestamp else datetime.now(),
+            created_at=(
+                datetime.fromtimestamp(event.timestamp) if event.timestamp else datetime.now()
+            ),
+            started_at=(
+                datetime.fromtimestamp(event.timestamp) if event.timestamp else datetime.now()
+            ),
         )
 
         # Notify callback if registered
@@ -135,9 +139,19 @@ class EventHandler(Widget):
             iteration=data.get("iteration", 0),
             max_iterations=data.get("max_iterations", 5),
             progress=1.0,
-            created_at=datetime.fromtimestamp(data.get("created_at", event.timestamp)) if data.get("created_at") or event.timestamp else datetime.now(),
-            started_at=datetime.fromtimestamp(data.get("started_at", event.timestamp)) if data.get("started_at") or event.timestamp else datetime.now(),
-            completed_at=datetime.fromtimestamp(event.timestamp) if event.timestamp else datetime.now(),
+            created_at=(
+                datetime.fromtimestamp(data.get("created_at", event.timestamp))
+                if data.get("created_at") or event.timestamp
+                else datetime.now()
+            ),
+            started_at=(
+                datetime.fromtimestamp(data.get("started_at", event.timestamp))
+                if data.get("started_at") or event.timestamp
+                else datetime.now()
+            ),
+            completed_at=(
+                datetime.fromtimestamp(event.timestamp) if event.timestamp else datetime.now()
+            ),
         )
 
         # Notify callback if registered
@@ -165,9 +179,19 @@ class EventHandler(Widget):
             iteration=data.get("iteration", 0),
             max_iterations=data.get("max_iterations", 5),
             progress=data.get("progress", 0.0),
-            created_at=datetime.fromtimestamp(data.get("created_at", event.timestamp)) if data.get("created_at") or event.timestamp else datetime.now(),
-            started_at=datetime.fromtimestamp(data.get("started_at", event.timestamp)) if data.get("started_at") or event.timestamp else datetime.now(),
-            completed_at=datetime.fromtimestamp(event.timestamp) if event.timestamp else datetime.now(),
+            created_at=(
+                datetime.fromtimestamp(data.get("created_at", event.timestamp))
+                if data.get("created_at") or event.timestamp
+                else datetime.now()
+            ),
+            started_at=(
+                datetime.fromtimestamp(data.get("started_at", event.timestamp))
+                if data.get("started_at") or event.timestamp
+                else datetime.now()
+            ),
+            completed_at=(
+                datetime.fromtimestamp(event.timestamp) if event.timestamp else datetime.now()
+            ),
             error_message=data.get("error_message"),
         )
 
@@ -201,9 +225,21 @@ class EventHandler(Widget):
             model=data.get("model", "sonnet"),
             iteration=data.get("iteration", 0),
             max_iterations=data.get("max_iterations", 5),
-            progress=data.get("iteration", 0) / data.get("max_iterations", 5) if data.get("max_iterations", 5) > 0 else 0.0,
-            created_at=datetime.fromtimestamp(data.get("created_at", event.timestamp)) if data.get("created_at") or event.timestamp else datetime.now(),
-            started_at=datetime.fromtimestamp(data.get("started_at", event.timestamp)) if data.get("started_at") or event.timestamp else datetime.now(),
+            progress=(
+                data.get("iteration", 0) / data.get("max_iterations", 5)
+                if data.get("max_iterations", 5) > 0
+                else 0.0
+            ),
+            created_at=(
+                datetime.fromtimestamp(data.get("created_at", event.timestamp))
+                if data.get("created_at") or event.timestamp
+                else datetime.now()
+            ),
+            started_at=(
+                datetime.fromtimestamp(data.get("started_at", event.timestamp))
+                if data.get("started_at") or event.timestamp
+                else datetime.now()
+            ),
         )
 
         # Notify callback if registered
@@ -234,9 +270,21 @@ class EventHandler(Widget):
             model=data.get("model", "sonnet"),
             iteration=data.get("iteration", 0),
             max_iterations=data.get("max_iterations", 5),
-            progress=data.get("iteration", 0) / data.get("max_iterations", 5) if data.get("max_iterations", 5) > 0 else 0.0,
-            created_at=datetime.fromtimestamp(data.get("created_at", event.timestamp)) if data.get("created_at") or event.timestamp else datetime.now(),
-            started_at=datetime.fromtimestamp(data.get("started_at", event.timestamp)) if data.get("started_at") or event.timestamp else datetime.now(),
+            progress=(
+                data.get("iteration", 0) / data.get("max_iterations", 5)
+                if data.get("max_iterations", 5) > 0
+                else 0.0
+            ),
+            created_at=(
+                datetime.fromtimestamp(data.get("created_at", event.timestamp))
+                if data.get("created_at") or event.timestamp
+                else datetime.now()
+            ),
+            started_at=(
+                datetime.fromtimestamp(data.get("started_at", event.timestamp))
+                if data.get("started_at") or event.timestamp
+                else datetime.now()
+            ),
         )
 
         # Notify callback if registered

@@ -8,7 +8,9 @@ task file loading and configuration options.
 from grind.tui.app import AgentTUI
 
 
-async def run_tui(task_file: str | None = None, model: str = "sonnet", verbose: bool = False) -> int:
+async def run_tui(
+    task_file: str | None = None, model: str = "sonnet", verbose: bool = False
+) -> int:
     """
     Launch the Agent Orchestration TUI.
 

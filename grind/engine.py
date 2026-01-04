@@ -28,8 +28,6 @@ from grind.interactive import (
     start_keyboard_listener,
     stop_keyboard_listener,
 )
-from grind.orchestration.events import AgentEvent, EventBus, EventType
-from grind.router import CostAwareRouter
 from grind.logging import (
     log_completion_check,
     log_continue_prompt,
@@ -49,7 +47,9 @@ from grind.logging import (
     setup_logger,
 )
 from grind.models import CheckpointAction, GrindResult, GrindStatus, TaskDefinition
+from grind.orchestration.events import AgentEvent, EventBus, EventType
 from grind.prompts import CONTINUE_PROMPT, DECOMPOSE_PROMPT, build_prompt
+from grind.router import CostAwareRouter
 from grind.utils import Color
 
 # Default set of tools available to the agent
@@ -58,6 +58,44 @@ DEFAULT_ALLOWED_TOOLS = ["Read", "Write", "Edit", "Bash", "Glob", "Grep"]
 # User abort message constants
 MSG_USER_ABORTED_AT_CHECKPOINT = "User aborted at checkpoint"
 MSG_USER_ABORTED = "User aborted"
+
+
+def _get_git_author_env() -> dict[str, str]:
+    """Get git author environment variables from git config.
+
+    This ensures agents commit with the user's git identity rather than
+    Claude Code's default identity.
+
+    Returns:
+        Dict with GIT_AUTHOR_NAME, GIT_AUTHOR_EMAIL, GIT_COMMITTER_NAME,
+        GIT_COMMITTER_EMAIL if available from git config.
+    """
+    env = {}
+    try:
+        result = subprocess.run(
+            ["git", "config", "--get", "user.name"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            name = result.stdout.strip()
+            env["GIT_AUTHOR_NAME"] = name
+            env["GIT_COMMITTER_NAME"] = name
+
+        result = subprocess.run(
+            ["git", "config", "--get", "user.email"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            email = result.stdout.strip()
+            env["GIT_AUTHOR_EMAIL"] = email
+            env["GIT_COMMITTER_EMAIL"] = email
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pass
+    return env
 
 # Regex patterns for detecting completion signals
 # Signals must be on their own line (not embedded in prose)
@@ -753,6 +791,7 @@ async def grind(
         cwd=task_def.cwd,
         max_turns=task_def.max_turns,
         model=task_def.model,
+        env=_get_git_author_env(),
     )
 
     start_time = datetime.now()
@@ -865,6 +904,7 @@ async def decompose(
         max_turns=10,
         model="opus",
         max_thinking_tokens=10000,
+        env=_get_git_author_env(),
     )
 
     collected = ""

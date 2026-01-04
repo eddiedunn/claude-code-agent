@@ -166,12 +166,29 @@ tasks:
         task_file.write_text(content)
 
         tasks = load_tasks(str(task_file))
-
         assert len(tasks) == 2
         assert tasks[0].task == "Task 1"
         assert tasks[0].model == "haiku"
         assert tasks[1].task == "Task 2"
         assert tasks[1].model == "sonnet"
+
+    def test_load_invalid_yaml_with_clear_error(self, tmp_path):
+        task_file = tmp_path / "bad.yaml"
+        content = """
+tasks:
+  - task: |
+      Bad YAML with unindented content
+<!DOCTYPE html>
+<html>
+"""
+        task_file.write_text(content)
+
+        with pytest.raises(ValueError) as exc_info:
+            load_tasks(str(task_file))
+
+        error_msg = str(exc_info.value)
+        assert "Failed to parse YAML file" in error_msg
+        assert "line" in error_msg.lower()
 
     def test_load_json_file(self, tmp_path):
         task_file = tmp_path / "tasks.json"

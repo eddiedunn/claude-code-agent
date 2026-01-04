@@ -9,8 +9,8 @@ overlay when the user starts typing commands.
 import asyncio
 
 from textual.containers import Container, Horizontal, ScrollableContainer, Vertical
-from textual.widgets import Input, Static
 from textual.reactive import reactive
+from textual.widgets import Input, Static
 
 from ..core.shell_commands import (
     CommandRegistry,
