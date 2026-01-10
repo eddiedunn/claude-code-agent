@@ -403,11 +403,12 @@ async def _process_messages(
     iteration: int,
     iteration_start: datetime,
     verbose: bool,
-) -> tuple[str, list[str]]:
-    """Process messages from client and return collected text and tools used."""
+) -> tuple[str, list[str], bool]:
+    """Process messages from client and return collected text, tools used, and error flag."""
     collected = ""
     tools: list[str] = []
     pending_tool_calls: dict[str, str] = {}  # tool_id -> tool_name
+    is_error = False
 
     async for msg in client.receive_response():
         if isinstance(msg, AssistantMessage):
@@ -424,6 +425,9 @@ async def _process_messages(
                 elif isinstance(block, ToolResultBlock):
                     _process_tool_result_block(block, pending_tool_calls, verbose)
         elif isinstance(msg, ResultMessage):
+            # Capture error flag from ResultMessage
+            is_error = msg.is_error or False
+
             # Log SDK telemetry from ResultMessage
             log_result_message(
                 duration_ms=msg.duration_ms,
@@ -445,7 +449,7 @@ async def _process_messages(
             iteration_duration_ms = iteration_duration * 1000
             log_iteration_end(iteration, tools, len(collected), iteration_duration_ms)
 
-    return collected, tools
+    return collected, tools, is_error
 
 
 async def _check_completion_signals(
@@ -530,10 +534,11 @@ async def _run_iteration(
     verbose: bool,
     on_iteration: Callable[[int, str], None] | None,
     event_bus: EventBus | None,
-) -> GrindResult | None:
+    consecutive_errors: int = 0,
+) -> tuple[GrindResult | None, bool]:
     """Run a single iteration of the grind loop.
 
-    Returns GrindResult if should exit, None to continue.
+    Returns (GrindResult if should exit or None to continue, is_error flag).
     """
     log_iteration_start(iteration, task_def.max_iterations)
 
@@ -555,12 +560,13 @@ async def _run_iteration(
             show_interject_hint()
 
     had_error = False
+    is_error = False
     iteration_start = datetime.now()
 
     # Process messages with timeout protection
     try:
         async with asyncio.timeout(task_def.query_timeout * 2):
-            collected, tools = await _process_messages(
+            collected, tools, is_error = await _process_messages(
                 client, iteration, iteration_start, verbose
             )
             all_tools.extend(tools)
@@ -579,14 +585,14 @@ async def _run_iteration(
                         data={"iteration": iteration, "tools_used": list(set(all_tools))},
                         timestamp=time.time()
                     ))
-                return result
+                return result, is_error
     except asyncio.TimeoutError:
         timeout_secs = task_def.query_timeout * 2
         timeout_msg = (
             f">>> Response timed out after {timeout_secs} seconds, continuing..."
         )
         _log(verbose, timeout_msg, "warning")
-        return None
+        return None, False
 
     # Run post-iteration hooks
     if task_def.hooks.post_iteration:
@@ -631,9 +637,9 @@ async def _run_iteration(
                     data={"iteration": iteration, "tools_used": list(set(all_tools))},
                     timestamp=time.time()
                 ))
-            return result
+            return result, is_error
     elif iteration < task_def.max_iterations:
-        await _send_continue_prompt(task_def, client, iteration, verbose)
+        await _send_continue_prompt(task_def, client, iteration, verbose, is_error, consecutive_errors)
     else:
         _log(
             verbose,
@@ -650,7 +656,7 @@ async def _run_iteration(
             timestamp=time.time()
         ))
 
-    return None
+    return None, is_error
 
 
 async def _send_continue_prompt(
@@ -658,8 +664,19 @@ async def _send_continue_prompt(
     client: ClaudeSDKClient,
     iteration: int,
     verbose: bool,
+    is_error: bool = False,
+    consecutive_errors: int = 0,
 ) -> None:
     """Send continue prompt to the client."""
+    # Apply exponential backoff if we're in an error state
+    if is_error and consecutive_errors > 0:
+        # Backoff schedule: 1s, 2s, 4s (for attempts 1, 2, 3)
+        backoff_delay = 2 ** (consecutive_errors - 1)
+        log_msg = f"API error detected, waiting {backoff_delay}s before retry ({consecutive_errors}/3)"
+        _log(verbose, log_msg, "warning")
+        print(Color.warning(log_msg))
+        await asyncio.sleep(backoff_delay)
+
     _log(
         verbose,
         f"\nSending continue prompt for iteration {iteration + 1}...",
@@ -837,12 +854,65 @@ async def grind(
                 )
 
             iteration = 0
+            consecutive_errors = 0
+            consecutive_fast_failures = 0
             while iteration < task_def.max_iterations:
                 iteration += 1
-                result = await _run_iteration(
+                iteration_start_time = datetime.now()
+                result, is_error = await _run_iteration(
                     task_def, client, iteration, all_tools,
-                    all_hooks_executed, start_time, verbose, on_iteration, event_bus
+                    all_hooks_executed, start_time, verbose, on_iteration, event_bus,
+                    consecutive_errors
                 )
+                iteration_duration = (datetime.now() - iteration_start_time).total_seconds()
+
+                # Track consecutive API errors
+                if is_error:
+                    consecutive_errors += 1
+                    _log(verbose, f"API error detected (consecutive: {consecutive_errors})", "warning")
+                else:
+                    consecutive_errors = 0
+
+                # Track fast failures: iteration < 2s AND has error
+                if iteration_duration < 2.0 and is_error:
+                    consecutive_fast_failures += 1
+                    _log(verbose, f"Fast failure detected: iteration completed in {iteration_duration:.2f}s with error", "warning")
+                    _log(verbose, f"Consecutive fast failures: {consecutive_fast_failures}", "warning")
+                else:
+                    consecutive_fast_failures = 0
+
+                # Exit early if we hit 3 consecutive fast failures
+                if consecutive_fast_failures >= 3:
+                    error_msg = f"Detected {consecutive_fast_failures} consecutive fast failures - stopping to prevent wasted iterations"
+                    _log(verbose, f">>> {error_msg}", "error")
+                    log_result("ERROR", iteration, error_msg, list(set(all_tools)),
+                              (datetime.now() - start_time).total_seconds())
+                    return GrindResult(
+                        GrindStatus.ERROR,
+                        iteration,
+                        error_msg,
+                        list(set(all_tools)),
+                        (datetime.now() - start_time).total_seconds(),
+                        all_hooks_executed,
+                        task_def.model,
+                    )
+
+                # Exit early if we hit 3 consecutive errors
+                if consecutive_errors >= 3:
+                    error_msg = f"Detected {consecutive_errors} consecutive API errors - stopping to prevent wasted iterations"
+                    _log(verbose, f">>> {error_msg}", "error")
+                    log_result("ERROR", iteration, error_msg, list(set(all_tools)),
+                              (datetime.now() - start_time).total_seconds())
+                    return GrindResult(
+                        GrindStatus.ERROR,
+                        iteration,
+                        error_msg,
+                        list(set(all_tools)),
+                        (datetime.now() - start_time).total_seconds(),
+                        all_hooks_executed,
+                        task_def.model,
+                    )
+
                 if result is not None:
                     return result
 

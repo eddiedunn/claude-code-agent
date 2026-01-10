@@ -740,3 +740,87 @@ class TestGetGitAuthorEnv:
             assert env["GIT_COMMITTER_NAME"] == "Test User"
             assert "GIT_AUTHOR_EMAIL" not in env
             assert "GIT_COMMITTER_EMAIL" not in env
+
+
+@pytest.mark.asyncio
+async def test_grind_stops_on_consecutive_errors(mock_sdk_client):
+    """Test that grind stops after 3 consecutive API errors."""
+    task_def = TaskDefinition(
+        task="Test task",
+        verify="echo test",
+        max_iterations=10,
+        model="sonnet",
+    )
+
+    # Track how many iterations we create messages for
+    iteration_count = 0
+
+    async def mock_receive():
+        nonlocal iteration_count
+        iteration_count += 1
+
+        # Create a simple response with no completion signals
+        text_block = create_mock_text_block(f"Iteration {iteration_count}")
+        assistant_msg = create_mock_assistant_message([text_block])
+
+        # Create error result messages for all iterations
+        result_msg = create_mock_result_message()
+        result_msg.is_error = True  # Simulate API errors
+
+        yield assistant_msg
+        yield result_msg
+
+    mock_sdk_client.receive_response = mock_receive
+
+    with patch('grind.engine.ClaudeSDKClient', return_value=mock_sdk_client):
+        result = await grind(task_def)
+
+    # Should stop after 3 consecutive errors (or fast failures in mock tests)
+    assert result.status == GrindStatus.ERROR
+    assert iteration_count == 3
+    # Accept either consecutive API errors or fast failures (mocks complete instantly)
+    assert ("consecutive API errors" in result.message or
+            "consecutive fast failures" in result.message)
+
+
+@pytest.mark.asyncio
+async def test_grind_resets_error_counter_on_success(mock_sdk_client):
+    """Test that error counter resets when a successful iteration occurs."""
+    task_def = TaskDefinition(
+        task="Test task",
+        verify="echo test",
+        max_iterations=10,
+        model="sonnet",
+    )
+
+    iteration_count = 0
+
+    async def mock_receive():
+        nonlocal iteration_count
+        iteration_count += 1
+
+        # Pattern: error, error, success, error, error, success, complete
+        # This ensures we never hit 3 consecutive errors
+        is_error_iteration = iteration_count in [1, 2, 4, 5]
+
+        if iteration_count == 7:
+            # Complete on iteration 7
+            text_block = create_mock_text_block("GRIND_COMPLETE: Done")
+        else:
+            text_block = create_mock_text_block(f"Iteration {iteration_count}")
+
+        assistant_msg = create_mock_assistant_message([text_block])
+        result_msg = create_mock_result_message()
+        result_msg.is_error = is_error_iteration
+
+        yield assistant_msg
+        yield result_msg
+
+    mock_sdk_client.receive_response = mock_receive
+
+    with patch('grind.engine.ClaudeSDKClient', return_value=mock_sdk_client):
+        result = await grind(task_def)
+
+    # Should complete successfully, not error out
+    assert result.status == GrindStatus.COMPLETE
+    assert iteration_count == 7  # Ran all the way to completion
