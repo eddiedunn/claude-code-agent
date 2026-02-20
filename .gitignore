@@ -26,3 +26,11 @@ coverage.xml
 !.claude/
 !.claude/commands/
 !.claude/commands/*.md
+
+# Sensitive / generated
+.scannerwork/
+.grind/logs/
+.pai-memory/
+.mailmap
+trivy-fs-report.json
+.claude/incident-reports/

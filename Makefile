@@ -158,11 +158,11 @@ sonar-scan:
 		-Dsonar.sources=. \
 		-Dsonar.exclusions="**/*test*/**,**/tests/**,**/__pycache__/**,**/venv/**,**/.venv/**,**/node_modules/**,**/tools/**,**/site/**,**/docs/**" \
 		-Dsonar.python.coverage.reportPaths=coverage.xml \
-		-Dsonar.host.url=http://192.168.x.x:9200 \
+		-Dsonar.host.url=$${SONAR_HOST_URL} \
 		-Dsonar.token="$$TOKEN"; \
 	echo ""; \
 	echo "Analysis complete! View results at:"; \
-	echo "http://192.168.x.x:9200/dashboard?id=grind-loop"
+	echo "$${SONAR_HOST_URL}/dashboard?id=grind-loop"
 
 # Help
 help:

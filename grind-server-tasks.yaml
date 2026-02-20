@@ -36,7 +36,7 @@ tasks:
         asyncio_mode = "auto"
 
       Do NOT modify any other parts of pyproject.toml.
-    verify: "cd ~/code/claude-code-agent && uv pip install -e '.[server]' && python -c 'import fastapi; import uvicorn; import sse_starlette; print(\"Dependencies OK\")'"
+    verify: "cd $PROJECT_ROOT && uv pip install -e '.[server]' && python -c 'import fastapi; import uvicorn; import sse_starlette; print(\"Dependencies OK\")'"
     model: haiku
     max_iterations: 5
 
@@ -93,7 +93,7 @@ tasks:
 
       Add empty __init__.py to each subdirectory.
       Do NOT create placeholder classes - those come in dedicated tasks.
-    verify: "cd ~/code/claude-code-agent && python -c 'from grind.server import create_app; from grind.server.logging import get_logger; app = create_app(); print(\"Structure OK\")'"
+    verify: "cd $PROJECT_ROOT && python -c 'from grind.server import create_app; from grind.server.logging import get_logger; app = create_app(); print(\"Structure OK\")'"
     model: sonnet
     max_iterations: 8
     depends_on: ["add-server-deps"]
@@ -133,7 +133,7 @@ tasks:
       ```
 
       Update grind/server/__init__.py to export these exceptions in __all__.
-    verify: "cd ~/code/claude-code-agent && python -c 'from grind.server.exceptions import SessionNotFoundError, SessionNotRunningError, GrindServerError; print(\"Exceptions OK\")'"
+    verify: "cd $PROJECT_ROOT && python -c 'from grind.server.exceptions import SessionNotFoundError, SessionNotRunningError, GrindServerError; print(\"Exceptions OK\")'"
     model: haiku
     max_iterations: 4
     depends_on: ["create-server-structure"]
@@ -191,7 +191,7 @@ tasks:
           task: str = Field(..., description="The task for the agent to complete")
           # ... other fields
       ```
-    verify: "cd ~/code/claude-code-agent && python -c 'from grind.server.models.requests import CreateSessionRequest, InjectRequest; r = CreateSessionRequest(task=\"test\"); print(\"Request models OK\")'"
+    verify: "cd $PROJECT_ROOT && python -c 'from grind.server.models.requests import CreateSessionRequest, InjectRequest; r = CreateSessionRequest(task=\"test\"); print(\"Request models OK\")'"
     model: haiku
     max_iterations: 5
     depends_on: ["create-server-structure"]
@@ -263,7 +263,7 @@ tasks:
 
       Use Pydantic v2 syntax with ConfigDict.
       Include json_schema_extra with examples for OpenAPI docs.
-    verify: "cd ~/code/claude-code-agent && python -c 'from grind.server.models.responses import SessionInfo, SessionStatus, HealthResponse; print(\"Response models OK\")'"
+    verify: "cd $PROJECT_ROOT && python -c 'from grind.server.models.responses import SessionInfo, SessionStatus, HealthResponse; print(\"Response models OK\")'"
     model: sonnet
     max_iterations: 6
     depends_on: ["create-server-structure"]
@@ -397,7 +397,7 @@ tasks:
       7. All timestamps should use timezone-aware UTC: datetime.now(timezone.utc)
 
       8. Start status processor in recover_sessions() or have app lifespan call it
-    verify: "cd ~/code/claude-code-agent && python -c 'from grind.server.services.session_manager import SessionManager; sm = SessionManager(); print(\"SessionManager OK\")'"
+    verify: "cd $PROJECT_ROOT && python -c 'from grind.server.services.session_manager import SessionManager; sm = SessionManager(); print(\"SessionManager OK\")'"
     model: opus
     max_iterations: 12
     depends_on: ["create-exceptions", "implement-request-models", "implement-response-models"]
@@ -447,7 +447,7 @@ tasks:
       ```
 
       Use Annotated[..., Depends(...)] syntax (modern FastAPI pattern).
-    verify: "cd ~/code/claude-code-agent && python -c 'from grind.server.routes.health import router; print(\"Health route OK\")'"
+    verify: "cd $PROJECT_ROOT && python -c 'from grind.server.routes.health import router; print(\"Health route OK\")'"
     model: haiku
     max_iterations: 5
     depends_on: ["implement-response-models"]
@@ -492,7 +492,7 @@ tasks:
 
       Use async def for all endpoints.
       Include docstrings - they become OpenAPI descriptions.
-    verify: "cd ~/code/claude-code-agent && python -c 'from grind.server.routes.sessions import router; print(\"Sessions route OK\")'"
+    verify: "cd $PROJECT_ROOT && python -c 'from grind.server.routes.sessions import router; print(\"Sessions route OK\")'"
     model: sonnet
     max_iterations: 8
     depends_on: ["implement-session-manager"]
@@ -589,7 +589,7 @@ tasks:
       ```
 
       The app should be created via: `from grind.server import create_app; app = create_app()`
-    verify: "cd ~/code/claude-code-agent && python -c 'from grind.server import create_app; app = create_app(); print(f\"Routes: {[r.path for r in app.routes]}\")'"
+    verify: "cd $PROJECT_ROOT && python -c 'from grind.server import create_app; app = create_app(); print(f\"Routes: {[r.path for r in app.routes]}\")'"
     model: sonnet
     max_iterations: 8
     depends_on: ["implement-health-route", "implement-sessions-route"]
@@ -665,7 +665,7 @@ tasks:
       Add console_scripts entry in pyproject.toml:
         [project.scripts]
         grind-server = "grind.server.cli:main"
-    verify: "cd ~/code/claude-code-agent && uv run grind-server --help"
+    verify: "cd $PROJECT_ROOT && uv run grind-server --help"
     model: sonnet
     max_iterations: 8
     depends_on: ["wire-fastapi-app"]
@@ -731,7 +731,7 @@ tasks:
       Use pytest fixtures for app and client setup.
       Mock grind() to avoid real Claude API calls.
       Group tests in classes by endpoint.
-    verify: "cd ~/code/claude-code-agent && uv run pytest tests/test_server_api.py -v --tb=short"
+    verify: "cd $PROJECT_ROOT && uv run pytest tests/test_server_api.py -v --tb=short"
     model: sonnet
     max_iterations: 10
     depends_on: ["create-server-cli"]
@@ -810,7 +810,7 @@ tasks:
       ```
 
       Check if grind.orchestration.events exists first - if not, create a minimal stub.
-    verify: "cd ~/code/claude-code-agent && python -c 'from grind.server.services.event_bridge import EventBridge; print(\"EventBridge OK\")'"
+    verify: "cd $PROJECT_ROOT && python -c 'from grind.server.services.event_bridge import EventBridge; print(\"EventBridge OK\")'"
     model: sonnet
     max_iterations: 8
     depends_on: ["wire-fastapi-app"]
@@ -866,7 +866,7 @@ tasks:
           finally:
               await event_bridge.disconnect(websocket)
       ```
-    verify: "cd ~/code/claude-code-agent && python -c 'from grind.server.routes.websocket import router; print(\"WebSocket route OK\")'"
+    verify: "cd $PROJECT_ROOT && python -c 'from grind.server.routes.websocket import router; print(\"WebSocket route OK\")'"
     model: sonnet
     max_iterations: 8
     depends_on: ["implement-event-bridge"]
@@ -909,7 +909,7 @@ tasks:
       ```
 
       Update SessionManager.__init__ to accept optional event_bridge parameter.
-    verify: "cd ~/code/claude-code-agent && python -c 'from grind.server import create_app; app = create_app(); ws_routes = [r.path for r in app.routes if hasattr(r, \"path\") and \"ws\" in r.path]; print(f\"WebSocket routes: {ws_routes}\")'"
+    verify: "cd $PROJECT_ROOT && python -c 'from grind.server import create_app; app = create_app(); ws_routes = [r.path for r in app.routes if hasattr(r, \"path\") and \"ws\" in r.path]; print(f\"WebSocket routes: {ws_routes}\")'"
     model: sonnet
     max_iterations: 8
     depends_on: ["implement-websocket-route"]
@@ -980,7 +980,7 @@ tasks:
       ```
 
       Use 250ms polling interval (not 100ms - too aggressive).
-    verify: "cd ~/code/claude-code-agent && python -c 'from grind.server.routes.sessions import router; print([r.path for r in router.routes])'"
+    verify: "cd $PROJECT_ROOT && python -c 'from grind.server.routes.sessions import router; print([r.path for r in router.routes])'"
     model: sonnet
     max_iterations: 8
     depends_on: ["integrate-eventbridge-with-app"]
@@ -1013,7 +1013,7 @@ tasks:
       4. Look at grind/interactive.py for the injection API
 
       Exceptions are handled by the app's exception handlers.
-    verify: "cd ~/code/claude-code-agent && python -c 'from grind.server.routes.sessions import router; import inspect; print([r.path for r in router.routes])'"
+    verify: "cd $PROJECT_ROOT && python -c 'from grind.server.routes.sessions import router; import inspect; print([r.path for r in router.routes])'"
     model: sonnet
     max_iterations: 8
     depends_on: ["implement-log-streaming"]
@@ -1052,7 +1052,7 @@ tasks:
 
       Use pytest-asyncio for async tests.
       Mock grind execution to control timing.
-    verify: "cd ~/code/claude-code-agent && uv run pytest tests/test_server_api.py -v --tb=short -k 'websocket or log or inject'"
+    verify: "cd $PROJECT_ROOT && uv run pytest tests/test_server_api.py -v --tb=short -k 'websocket or log or inject'"
     model: sonnet
     max_iterations: 10
     depends_on: ["implement-inject-endpoint"]
@@ -1156,7 +1156,7 @@ tasks:
       ```
 
       Update cli.py to use daemon functions.
-    verify: "cd ~/code/claude-code-agent && uv run grind-server status"
+    verify: "cd $PROJECT_ROOT && uv run grind-server status"
     model: opus
     max_iterations: 12
     depends_on: ["test-phase2-and-3"]
@@ -1224,7 +1224,7 @@ tasks:
           }
           state_file.write_text(json.dumps(state, indent=2))
       ```
-    verify: "cd ~/code/claude-code-agent && python -c 'from grind.server.services.session_manager import SessionManager; import inspect; print(\"shutdown\" in dir(SessionManager))'"
+    verify: "cd $PROJECT_ROOT && python -c 'from grind.server.services.session_manager import SessionManager; import inspect; print(\"shutdown\" in dir(SessionManager))'"
     model: sonnet
     max_iterations: 10
     depends_on: ["implement-daemon-mode"]
@@ -1285,7 +1285,7 @@ tasks:
       - Seeing previous sessions after restart
       - Understanding what was interrupted
       - Future: resuming interrupted sessions
-    verify: "cd ~/code/claude-code-agent && python -c 'from grind.server.services.session_manager import SessionManager; import inspect; print(\"recover_sessions\" in dir(SessionManager))'"
+    verify: "cd $PROJECT_ROOT && python -c 'from grind.server.services.session_manager import SessionManager; import inspect; print(\"recover_sessions\" in dir(SessionManager))'"
     model: sonnet
     max_iterations: 8
     depends_on: ["implement-graceful-shutdown"]
@@ -1361,7 +1361,7 @@ tasks:
 
       Mark slow tests with @pytest.mark.slow for optional skipping.
       Use subprocess with timeouts.
-    verify: "cd ~/code/claude-code-agent && uv run pytest tests/test_server_daemon.py -v --tb=short || echo 'Tests created, some may fail initially'"
+    verify: "cd $PROJECT_ROOT && uv run pytest tests/test_server_daemon.py -v --tb=short || echo 'Tests created, some may fail initially'"
     model: sonnet
     max_iterations: 10
     depends_on: ["implement-state-recovery"]
@@ -1414,7 +1414,7 @@ tasks:
 
       Ensure all Pydantic models have json_schema_extra with examples.
       Ensure all endpoint functions have docstrings.
-    verify: "cd ~/code/claude-code-agent && python -c 'from grind.server import create_app; app = create_app(); print(app.openapi()[\"info\"])'"
+    verify: "cd $PROJECT_ROOT && python -c 'from grind.server import create_app; app = create_app(); print(app.openapi()[\"info\"])'"
     model: haiku
     max_iterations: 6
     depends_on: ["test-phase4-daemon"]
@@ -1507,7 +1507,7 @@ tasks:
       ```
 
       Use pytest-asyncio with httpx AsyncClient for async tests.
-    verify: "cd ~/code/claude-code-agent && uv run pytest tests/test_server_integration.py -v --tb=short || echo 'Integration test created'"
+    verify: "cd $PROJECT_ROOT && uv run pytest tests/test_server_integration.py -v --tb=short || echo 'Integration test created'"
     model: opus
     max_iterations: 12
     depends_on: ["add-openapi-docs"]

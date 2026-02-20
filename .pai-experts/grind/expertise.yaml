@@ -1,0 +1,68 @@
+schema_version: '1.0'
+domain: grind
+description: Claude-code-agent grind CLI expert
+confidence: 0.3
+last_validated: null
+created_at: '2026-01-15T23:57:10.666118Z'
+mental_model:
+  core_concepts:
+    - entity: GrindResult
+      description: "Core data structure returned by grind execution. Contains status (COMPLETE|STUCK|MAX_ITERATIONS|ERROR), iterations count, duration, tools used, and hooks executed."
+      location: grind/models.py:95-103
+    - entity: TaskDefinition
+      description: "Defines automated fix-verify task. Includes task prompt, verify command, model selection (haiku/sonnet/opus), max iterations, hooks, and prompt config."
+      location: grind/models.py:106-153
+    - entity: FusionConfig
+      description: "Configuration for fusion mode (parallel multi-agent execution). Runs N agents in parallel worktrees, then fuses solutions using best-pick/hybrid/manual strategies."
+      location: grind/models.py:343-377
+    - entity: GrindHooks
+      description: "Hook system with pre_grind, post_iteration, and post_grind phases. Supports triggers: EVERY, EVERY_N, ON_ERROR, ON_SUCCESS, ONCE."
+      location: grind/models.py:59-76
+  key_patterns:
+    - pattern: "Fix-verify loop"
+      description: "Core grind pattern: agent attempts fix → run verify command → check exit code → if failed, inject error and continue. Iterates until COMPLETE signal or max iterations."
+      example: "grind run --task 'Fix linting errors' --verify 'make lint' --max-iter 10"
+    - pattern: "L-Thread vs F-Thread"
+      description: "L-Thread (Linear Thread): single agent iterating on task. F-Thread (Fusion Thread): multiple agents in parallel worktrees solving same task, then fusion agent combines solutions."
+      example: "L-Thread: grind run. F-Thread: grind fusion --agent-count 3"
+    - pattern: "Subprocess execution"
+      description: "Verify commands run via subprocess with CWD support. Captures stdout/stderr and exit code to determine success/failure."
+      location: "Engine uses subprocess.run() for verify commands"
+    - pattern: "Worktree isolation"
+      description: "Fusion mode creates git worktrees for each agent. Allows parallel execution without conflicts. Cleanup configurable per success/failure."
+      location: grind/worktree.py
+  common_pitfalls:
+    - pitfall: "Model selection"
+      description: "Default is haiku for speed/cost. Use sonnet for complex reasoning, opus only for hardest tasks. Many users over-provision to sonnet unnecessarily."
+      mitigation: "Start with haiku. Upgrade to sonnet only if stuck or task requires deep reasoning."
+    - pitfall: "Max iterations too low"
+      description: "Default is 10. Complex tasks may need 20-30 iterations. Exit code 3 indicates max_iterations hit."
+      mitigation: "Monitor iterations in output. Increase --max-iter if hitting limit."
+    - pitfall: "Verify command false positives"
+      description: "Verify command must return exit code 0 for success. Some tools (like grep with no matches) return non-zero even when 'correct'."
+      mitigation: "Wrap verify in script that returns appropriate exit codes."
+  best_practices:
+    - practice: "Start simple with L-Thread"
+      description: "Use standard 'grind run' for most tasks. Only use fusion mode for high-value tasks where multiple solutions add value."
+    - practice: "Use hooks for validation"
+      description: "Add post_iteration hooks to run additional checks. Use ON_ERROR hooks for debugging."
+    - practice: "Interactive mode for complex tasks"
+      description: "Use --interactive flag to pause between iterations and inject guidance when agent gets stuck."
+    - practice: "Session IDs for tracking"
+      description: "Fusion mode auto-generates session_id for trajectory tracking. Manual tasks can set session_id for programmatic injection tracking."
+validation:
+  file_patterns:
+  - grind/cli.py
+  - grind/engine.py
+  - grind/fusion.py
+  - grind/models.py
+  required_files: []
+  validation_commands: []
+trajectory_stats:
+  total_executions: 0
+  success_rate: 0.0
+  last_20_success_rate: 0.0
+  avg_iterations: 0.0
+  avg_duration_seconds: 0.0
+learnings: []
+

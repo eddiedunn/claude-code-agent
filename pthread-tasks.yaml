@@ -1,0 +1,542 @@
+# P-Thread Manager - Model-Agnostic AI Coding Session Multiplexer
+#
+# Purpose: Parallel interactive terminal sessions for AI coding assistants
+# Supports: Claude Code, Gemini, Aider, Codex, any CLI-based AI tool
+#
+# This is NOT grind (L-Thread). This is P-Thread - parallel interactive sessions.
+
+tasks:
+  # ============================================================================
+  # Phase 1: Core Infrastructure - PTY and Session Management
+  # ============================================================================
+
+  - id: "pthread-package-init"
+    task: |
+      Create the pthread package structure in the claude-code-agent repo.
+
+      Create directory: pthread/
+      Create files:
+      - pthread/__init__.py (exports main classes)
+      - pthread/py.typed (PEP 561 marker)
+
+      The __init__.py should have docstring:
+      '''
+      P-Thread Manager - Model-Agnostic AI Coding Session Multiplexer
+
+      Spawn and manage parallel interactive terminal sessions for AI coding
+      assistants: Claude Code, Gemini, Aider, and any CLI-based tool.
+
+      This implements the P-Thread pattern from thread-based engineering:
+      multiple interactive sessions running in parallel with full terminal control.
+      '''
+
+      Export placeholders for: PTYSession, SessionManager, PThreadTUI
+    verify: "cd $PROJECT_ROOT && python -c 'import pthread; print(pthread.__doc__)'"
+    model: haiku
+    max_iterations: 4
+
+  - id: "pty-session-class"
+    task: |
+      Create PTYSession class in pthread/pty_session.py.
+
+      This class manages a single PTY (pseudo-terminal) subprocess.
+
+      Requirements:
+      - __init__(command: list[str], env: dict | None = None)
+      - async start() -> None: Fork PTY, spawn subprocess
+      - async read() -> bytes: Non-blocking read from PTY
+      - write(data: bytes) -> None: Write to PTY stdin
+      - resize(rows: int, cols: int) -> None: Send SIGWINCH
+      - terminate() -> None: Kill subprocess gracefully
+      - kill() -> None: Force kill subprocess
+      - @property is_alive -> bool: Check if process running
+      - @property exit_code -> int | None: Return code if terminated
+
+      Use the `pty` module for PTY creation.
+      Use `os.read()` with `select` or `asyncio` for non-blocking reads.
+      Store: pid, fd (file descriptor), process status.
+
+      Handle edge cases:
+      - Process exits unexpectedly
+      - PTY read errors
+      - Graceful vs forced termination
+    verify: "cd $PROJECT_ROOT && python -c 'from pthread.pty_session import PTYSession; print(\"PTYSession class created\")'"
+    model: sonnet
+    max_iterations: 12
+    depends_on: ["pthread-package-init"]
+
+  - id: "session-manager"
+    task: |
+      Create SessionManager class in pthread/session_manager.py.
+
+      Manages multiple PTYSession instances.
+
+      Requirements:
+      - __init__(max_sessions: int = 10)
+      - create_session(session_id: str, command: list[str], env: dict | None = None) -> PTYSession
+      - get_session(session_id: str) -> PTYSession | None
+      - list_sessions() -> list[SessionInfo]
+      - kill_session(session_id: str) -> bool
+      - kill_all() -> None
+      - async read_all() -> dict[str, bytes]: Read from all sessions
+      - @property active_count -> int
+
+      SessionInfo dataclass:
+      - session_id: str
+      - command: list[str]
+      - status: SessionStatus (enum: RUNNING, STOPPED, FAILED)
+      - started_at: datetime
+      - model: str | None (detected from command)
+
+      Auto-detect model from command:
+      - "claude" in command → model = "claude"
+      - "gemini" in command → model = "gemini"
+      - "aider" in command → model = "aider"
+      - else → model = "generic"
+
+      Thread-safe session dictionary.
+    verify: "cd $PROJECT_ROOT && python -c 'from pthread.session_manager import SessionManager, SessionInfo; print(\"SessionManager created\")'"
+    model: sonnet
+    max_iterations: 10
+    depends_on: ["pty-session-class"]
+
+  # ============================================================================
+  # Phase 2: Terminal Emulation - Full VT100 Support
+  # ============================================================================
+
+  - id: "terminal-emulator"
+    task: |
+      Create TerminalEmulator class in pthread/terminal_emulator.py.
+
+      Uses `pyte` library for VT100/ANSI terminal emulation.
+
+      Requirements:
+      - __init__(rows: int = 24, cols: int = 80)
+      - feed(data: bytes) -> None: Process incoming bytes
+      - resize(rows: int, cols: int) -> None: Resize terminal
+      - get_display() -> list[str]: Get current screen lines
+      - get_cursor_position() -> tuple[int, int]: (row, col)
+      - get_dirty_lines() -> set[int]: Lines changed since last call
+      - clear_dirty() -> None: Reset dirty tracking
+      - @property screen -> pyte.Screen: Access underlying screen
+
+      Use pyte.Screen and pyte.Stream for emulation.
+      Handle UTF-8 properly.
+      Track dirty lines for efficient rendering.
+
+      Add dependency to pyproject.toml: pyte >= 0.8.0
+    verify: "cd $PROJECT_ROOT && python -c 'from pthread.terminal_emulator import TerminalEmulator; t = TerminalEmulator(); t.feed(b\"Hello World\"); print(t.get_display()[0])'"
+    model: sonnet
+    max_iterations: 10
+    depends_on: ["pthread-package-init"]
+
+  - id: "add-pyte-dependency"
+    task: |
+      Add pyte dependency to pyproject.toml for terminal emulation.
+
+      In pyproject.toml, add to dependencies:
+      - pyte >= 0.8.0
+
+      Run: uv sync to install
+
+      Verify import works: python -c "import pyte; print(pyte.__version__)"
+    verify: "cd $PROJECT_ROOT && uv run python -c 'import pyte; print(f\"pyte {pyte.__version__} installed\")'"
+    model: haiku
+    max_iterations: 4
+
+  # ============================================================================
+  # Phase 3: Textual TUI Widgets
+  # ============================================================================
+
+  - id: "terminal-widget"
+    task: |
+      Create TerminalWidget for Textual in pthread/widgets/terminal_widget.py.
+
+      A Textual Widget that displays PTY output with full terminal emulation.
+
+      Requirements:
+      - Extends textual.widgets.Static or textual.widget.Widget
+      - __init__(session: PTYSession, emulator: TerminalEmulator)
+      - Renders emulator.get_display() as Rich text
+      - Handles ANSI colors via pyte's screen.buffer
+      - Captures keyboard input and sends to session.write()
+      - on_key() handler routes all keys to PTY
+      - on_resize() calls emulator.resize() and session.resize()
+      - async update_loop(): Periodically reads from session and feeds emulator
+      - Supports cursor display
+
+      Key handling:
+      - Regular keys → send bytes to PTY
+      - Ctrl+C → send b'\x03'
+      - Ctrl+D → send b'\x04'
+      - Arrow keys → send escape sequences
+      - Backspace → send b'\x7f'
+
+      Performance:
+      - Only re-render dirty lines
+      - Batch updates every 50ms
+    verify: "cd $PROJECT_ROOT && uv run python -c 'from pthread.widgets.terminal_widget import TerminalWidget; print(\"TerminalWidget created\")'"
+    model: opus
+    max_iterations: 15
+    depends_on: ["terminal-emulator", "pty-session-class", "add-pyte-dependency"]
+
+  - id: "session-list-widget"
+    task: |
+      Create SessionListWidget for Textual in pthread/widgets/session_list.py.
+
+      A compact list showing all running sessions.
+
+      Requirements:
+      - Extends textual.widgets.ListView
+      - Shows: session_id, model icon, status
+      - Format: "*claude-1    ● UP" (selected indicator, name, status)
+      - Model icons: 🟣 claude, 🔵 gemini, 🟢 aider, ⚪ generic
+      - Status: UP (running), DOWN (stopped), FAIL (error)
+      - Keyboard navigation: arrows to select, enter to focus terminal
+      - on_session_selected callback for parent to switch terminal view
+      - update_sessions(sessions: list[SessionInfo]) method
+      - Highlight selected session
+
+      Keep aesthetic minimal and CLI-native like existing grind TUI.
+    verify: "cd $PROJECT_ROOT && uv run python -c 'from pthread.widgets.session_list import SessionListWidget; print(\"SessionListWidget created\")'"
+    model: sonnet
+    max_iterations: 10
+    depends_on: ["session-manager"]
+
+  - id: "pthread-monitor-view"
+    task: |
+      Create PThreadMonitorView in pthread/widgets/monitor_view.py.
+
+      Split-pane layout: SessionList (left) + TerminalWidget (right).
+
+      Requirements:
+      - Extends textual.containers.Horizontal
+      - Left pane (25%): SessionListWidget
+      - Right pane (75%): TerminalWidget for selected session
+      - Switch terminal when session selected in list
+      - Header shows: "Terminal - {model} · {session_id}"
+      - Keyboard: Tab to switch focus between panes
+      - Maintains TerminalWidget instance per session (or swaps)
+      - Wire session selection to terminal switching
+
+      CSS Layout:
+      - #session-list-pane { width: 25%; border-right: solid $accent; }
+      - #terminal-pane { width: 75%; }
+    verify: "cd $PROJECT_ROOT && uv run python -c 'from pthread.widgets.monitor_view import PThreadMonitorView; print(\"PThreadMonitorView created\")'"
+    model: sonnet
+    max_iterations: 12
+    depends_on: ["terminal-widget", "session-list-widget"]
+
+  # ============================================================================
+  # Phase 4: Model Adapters
+  # ============================================================================
+
+  - id: "model-adapter-base"
+    task: |
+      Create ModelAdapter base class in pthread/adapters/base.py.
+
+      Abstract base for model-specific adapters.
+
+      Requirements:
+      - @abstractmethod get_command(task: str | None = None) -> list[str]
+      - @abstractmethod get_env() -> dict[str, str]
+      - @property name -> str: Model name (claude, gemini, etc.)
+      - @property icon -> str: Emoji icon for display
+      - @classmethod detect(command: list[str]) -> bool: Check if command matches this adapter
+
+      Adapters customize how to launch each AI coding tool.
+    verify: "cd $PROJECT_ROOT && python -c 'from pthread.adapters.base import ModelAdapter; print(\"ModelAdapter base created\")'"
+    model: haiku
+    max_iterations: 6
+    depends_on: ["pthread-package-init"]
+
+  - id: "claude-adapter"
+    task: |
+      Create ClaudeAdapter in pthread/adapters/claude.py.
+
+      Adapter for Claude Code CLI.
+
+      Requirements:
+      - get_command(task) → ["claude"] or ["claude", "--print", task] if task provided
+      - get_env() → {} (uses default env)
+      - name → "claude"
+      - icon → "🟣"
+      - detect(cmd) → "claude" in cmd[0]
+
+      Handle Claude Code specific flags if needed.
+    verify: "cd $PROJECT_ROOT && python -c 'from pthread.adapters.claude import ClaudeAdapter; a = ClaudeAdapter(); print(a.get_command())'"
+    model: haiku
+    max_iterations: 5
+    depends_on: ["model-adapter-base"]
+
+  - id: "gemini-adapter"
+    task: |
+      Create GeminiAdapter in pthread/adapters/gemini.py.
+
+      Adapter for Google Gemini CLI.
+
+      Requirements:
+      - get_command(task) → ["gemini"] or appropriate gemini CLI command
+      - get_env() → {} or any required env vars
+      - name → "gemini"
+      - icon → "🔵"
+      - detect(cmd) → "gemini" in cmd[0]
+
+      Note: Adapt based on actual Gemini CLI syntax when available.
+    verify: "cd $PROJECT_ROOT && python -c 'from pthread.adapters.gemini import GeminiAdapter; a = GeminiAdapter(); print(a.name)'"
+    model: haiku
+    max_iterations: 5
+    depends_on: ["model-adapter-base"]
+
+  - id: "aider-adapter"
+    task: |
+      Create AiderAdapter in pthread/adapters/aider.py.
+
+      Adapter for Aider CLI.
+
+      Requirements:
+      - get_command(task) → ["aider"] or ["aider", "--message", task] if task
+      - get_env() → {} or AIDER specific env vars
+      - name → "aider"
+      - icon → "🟢"
+      - detect(cmd) → "aider" in cmd[0]
+
+      Reference aider docs for correct CLI flags.
+    verify: "cd $PROJECT_ROOT && python -c 'from pthread.adapters.aider import AiderAdapter; a = AiderAdapter(); print(a.name)'"
+    model: haiku
+    max_iterations: 5
+    depends_on: ["model-adapter-base"]
+
+  - id: "generic-adapter"
+    task: |
+      Create GenericAdapter in pthread/adapters/generic.py.
+
+      Adapter for any CLI command (fallback).
+
+      Requirements:
+      - __init__(command: list[str])
+      - get_command(task) → self.command (pass through)
+      - get_env() → {}
+      - name → "generic"
+      - icon → "⚪"
+      - detect(cmd) → True (always matches as fallback)
+
+      Allows running any command: bash, python, custom scripts, etc.
+    verify: "cd $PROJECT_ROOT && python -c 'from pthread.adapters.generic import GenericAdapter; a = GenericAdapter([\"bash\"]); print(a.get_command())'"
+    model: haiku
+    max_iterations: 4
+    depends_on: ["model-adapter-base"]
+
+  - id: "adapter-registry"
+    task: |
+      Create AdapterRegistry in pthread/adapters/__init__.py.
+
+      Registry that auto-detects and provides correct adapter for a command.
+
+      Requirements:
+      - register(adapter_class: type[ModelAdapter]) -> None
+      - get_adapter(command: list[str]) -> ModelAdapter
+      - list_adapters() -> list[str]: Return registered adapter names
+
+      Pre-register: ClaudeAdapter, GeminiAdapter, AiderAdapter, GenericAdapter
+      Detection order: Claude → Gemini → Aider → Generic (fallback)
+
+      Usage:
+        registry = AdapterRegistry()
+        adapter = registry.get_adapter(["claude", "--print", "fix bug"])
+        # Returns ClaudeAdapter instance
+    verify: "cd $PROJECT_ROOT && python -c 'from pthread.adapters import AdapterRegistry; r = AdapterRegistry(); print(r.list_adapters())'"
+    model: haiku
+    max_iterations: 6
+    depends_on: ["claude-adapter", "gemini-adapter", "aider-adapter", "generic-adapter"]
+
+  # ============================================================================
+  # Phase 5: Main TUI Application
+  # ============================================================================
+
+  - id: "pthread-app"
+    task: |
+      Create PThreadTUI main application in pthread/app.py.
+
+      The main Textual application for P-Thread management.
+
+      Requirements:
+      - Extends textual.app.App
+      - Title: "P-Thread - AI Coding Session Manager"
+      - Layout:
+        - Header with title
+        - PThreadMonitorView (main content)
+        - Footer with keybindings
+        - Command input (like grind's FooterShell)
+      - Keybindings:
+        - Ctrl+N: New session (prompt for model)
+        - Ctrl+K: Kill selected session
+        - Ctrl+Tab: Next session
+        - Ctrl+Shift+Tab: Previous session
+        - Ctrl+Q: Quit
+      - Initialize SessionManager on startup
+      - Wire session events to UI updates
+      - Handle graceful shutdown (kill all sessions)
+
+      Maintain aesthetic consistency with grind TUI.
+    verify: "cd $PROJECT_ROOT && uv run python -c 'from pthread.app import PThreadTUI; app = PThreadTUI(); print(\"PThreadTUI created\")'"
+    model: opus
+    max_iterations: 15
+    depends_on: ["pthread-monitor-view", "session-manager", "adapter-registry"]
+
+  - id: "pthread-commands"
+    task: |
+      Create shell commands for P-Thread in pthread/commands.py.
+
+      Commands available in the TUI command input.
+
+      Commands:
+      - pthd <model> <task> <count>: Spawn N parallel sessions
+        Example: pthd claude "fix auth bug" 3
+        Creates: claude-1, claude-2, claude-3
+
+      - fork <model> [task] [--id NAME]: Spawn single session
+        Example: fork gemini "review code" --id review-1
+
+      - kill <session_id>: Kill specific session
+        Example: kill claude-1
+
+      - killall: Kill all sessions
+
+      - list / ls: List all sessions with status
+
+      - focus <session_id>: Switch to session
+
+      - send <session_id> <text>: Send text to session
+        Example: send claude-1 "what files changed?"
+
+      Use CommandRegistry pattern from grind/tui/core/shell_commands.py.
+    verify: "cd $PROJECT_ROOT && python -c 'from pthread.commands import CommandRegistry; r = CommandRegistry(); assert r.get_command(\"pthd\"); print(\"Commands registered\")'"
+    model: sonnet
+    max_iterations: 12
+    depends_on: ["pthread-app", "session-manager"]
+
+  # ============================================================================
+  # Phase 6: CLI Entry Point
+  # ============================================================================
+
+  - id: "pthread-cli"
+    task: |
+      Create CLI entry point in pthread/cli.py and register in pyproject.toml.
+
+      CLI Commands:
+      - pthread: Launch TUI (default)
+      - pthread spawn <model> [task]: Quick spawn and launch TUI
+      - pthread pthd <model> <task> <count>: Spawn N and launch TUI
+
+      In pyproject.toml [project.scripts]:
+        pthread = "pthread.cli:main"
+
+      Use click or typer for CLI parsing.
+      Entry point launches PThreadTUI with optional pre-spawned sessions.
+
+      Examples:
+        $ pthread                          # Launch empty TUI
+        $ pthread spawn claude             # Launch with 1 claude session
+        $ pthread pthd claude "fix bug" 3  # Launch with 3 claude sessions
+    verify: "cd $PROJECT_ROOT && uv run pthread --help"
+    model: sonnet
+    max_iterations: 10
+    depends_on: ["pthread-app", "pthread-commands"]
+
+  # ============================================================================
+  # Phase 7: Integration and Polish
+  # ============================================================================
+
+  - id: "pthread-integration-test"
+    task: |
+      Create integration test that spawns real sessions in pthread/tests/test_integration.py.
+
+      Test scenarios:
+      1. Spawn single claude session, verify PTY works
+      2. Spawn 3 parallel sessions, verify all running
+      3. Send input to session, verify echoed
+      4. Kill session, verify cleanup
+      5. Resize terminal, verify SIGWINCH sent
+
+      Use pytest-asyncio for async tests.
+      Mock the actual AI CLI commands with simple shell commands for testing:
+        ["bash", "-c", "echo 'Mock AI session'; cat"]
+
+      Verify:
+      - PTY creation and cleanup
+      - Multi-session management
+      - Input/output routing
+    verify: "cd $PROJECT_ROOT && uv run pytest pthread/tests/test_integration.py -v"
+    model: sonnet
+    max_iterations: 12
+    depends_on: ["pthread-cli"]
+
+  - id: "pthread-readme"
+    task: |
+      Create README for P-Thread in pthread/README.md.
+
+      Contents:
+      - What is P-Thread (parallel interactive sessions)
+      - How it differs from Grind (L-Thread vs P-Thread)
+      - Supported models (Claude, Gemini, Aider, generic)
+      - Installation and usage
+      - CLI commands reference
+      - TUI keybindings
+      - Examples with screenshots (ASCII art)
+      - Thread-based engineering context (link to video concepts)
+
+      Include ASCII art of the split-pane TUI layout.
+    verify: "cd $PROJECT_ROOT && [ -f pthread/README.md ] && head -20 pthread/README.md"
+    model: haiku
+    max_iterations: 6
+    depends_on: ["pthread-cli"]
+
+  - id: "update-main-readme"
+    task: |
+      Update main README.md to document both Grind and P-Thread.
+
+      Add section explaining the thread-based engineering model:
+      - Grind = L-Thread (autonomous loops)
+      - P-Thread = Parallel interactive sessions
+      - How they complement each other
+
+      Add P-Thread to the feature list.
+      Link to pthread/README.md for details.
+    verify: "cd $PROJECT_ROOT && grep -q 'P-Thread' README.md && echo 'README updated'"
+    model: haiku
+    max_iterations: 5
+    depends_on: ["pthread-readme"]
+
+# ==============================================================================
+# Summary
+# ==============================================================================
+#
+# P-Thread Manager: Model-agnostic AI coding session multiplexer
+#
+# Phase 1: Core Infrastructure (3 tasks)
+#   - Package init, PTYSession, SessionManager
+#
+# Phase 2: Terminal Emulation (2 tasks)
+#   - TerminalEmulator (pyte), add dependency
+#
+# Phase 3: TUI Widgets (3 tasks)
+#   - TerminalWidget, SessionListWidget, PThreadMonitorView
+#
+# Phase 4: Model Adapters (6 tasks)
+#   - Base, Claude, Gemini, Aider, Generic, Registry
+#
+# Phase 5: Main Application (2 tasks)
+#   - PThreadTUI, Commands
+#
+# Phase 6: CLI Entry Point (1 task)
+#   - CLI with pthread command
+#
+# Phase 7: Integration (3 tasks)
+#   - Tests, README, main README update
+#
+# Total: 20 tasks
+# Models: haiku (9), sonnet (8), opus (3)
+#
+# Run with:
+# cd ~/code/claude-code-agent && uv run grind dag pthread-tasks.yaml --parallel 3
