@@ -1,10 +1,20 @@
+<!-- description: Grind Loop is an autonomous AI coding agent built on the Claude Agent SDK that runs fix-verify loops, decomposes problems into DAG-scheduled tasks, executes them in parallel Git worktrees, and merges results — all without human supervision. -->
+
 # Grind Loop
 
-Automated fix-verify loops using Claude Agent SDK with intelligent model selection and task decomposition.
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Claude Agent SDK](https://img.shields.io/badge/Claude%20Agent%20SDK-0.1%2B-blueviolet?logo=anthropic)](https://github.com/anthropics/claude-agent-sdk)
+[![uv](https://img.shields.io/badge/uv-package%20manager-orange)](https://github.com/astral-sh/uv)
+
+**An autonomous AI coding agent that fixes your codebase while you're away — powered by Anthropic's Claude Agent SDK.**
+
+---
 
 ## The Problem
 
-You spend hours doing this:
+You spend hours trapped in this loop:
+
 ```
 See failure -> Paste to Claude -> Apply fix -> Run tests -> See failure -> repeat...
 ```
@@ -12,125 +22,144 @@ See failure -> Paste to Claude -> Apply fix -> Run tests -> See failure -> repea
 ## The Solution
 
 ```bash
-uv run grind run --task "Fix failing tests" --verify "pytest tests/ -v"
+uv run grind run --task "Fix all failing tests" --verify "pytest tests/ -v"
 ```
 
 Walk away. Come back to passing tests.
 
-## Key Features (December 2025)
+Grind Loop is an **agentic workflow** engine that drives Claude through automated **fix-verify loops**, intelligently decomposes large problems into a **DAG** of parallel subtasks, executes each in isolated **Git worktrees**, and merges the results — no human in the loop required.
 
-- **Intelligent Model Selection**: Opus 4.5 for planning, Haiku 4.5 for execution (3-5x cost savings)
-- **Extended Thinking**: 10K token reasoning budget for complex decomposition
-- **CostAwareRouter**: Automatic model assignment based on task complexity
-- **Interleaved Thinking**: Better reasoning between tool calls
-- **DAG Execution**: Parallel task execution with dependency management
-- **Git Worktrees**: Conflict-free parallel execution
-- **WebSearch Integration**: Research capability during decomposition
+---
 
-**Pricing (Dec 2025):**
-- Haiku 4.5: $1/$5 per million tokens (default, 73% of Opus capability)
-- Sonnet 4.5: $3/$15 per million tokens (medium complexity)
-- Opus 4.5: $5/$25 per million tokens (planning, 67% cheaper than Opus 4.1)
+## Key Features
+
+- **Autonomous fix-verify loop** — Claude iterates until your verification command exits 0, signaling `GRIND_COMPLETE`
+- **Intelligent task decomposition** — analyzes a broad problem and breaks it into a prioritized, dependency-ordered task list
+- **DAG execution** — runs independent subtasks in parallel with dependency management for maximum throughput
+- **Git worktree isolation** — each parallel task runs in its own worktree, eliminating merge conflicts during execution
+- **Multi-agent orchestration** — coordinates multiple Claude Agent SDK instances across concurrent tasks
+- **CostAwareRouter** — automatically selects Haiku, Sonnet, or Opus based on task complexity (3-5x cost savings)
+- **Extended Thinking** — optional 10K-token reasoning budget for complex decomposition and planning
+- **Slash command hooks** — inject custom Claude Code commands at lifecycle points (`pre_grind`, `post_iteration`, `post_grind`)
+- **Intelligent merge** — combines parallel worktree branches with conflict detection, backup staging, and post-merge verification
+- **Batch mode** — run a YAML/JSON task list sequentially with aggregated result summaries
+- **Interactive TUI** — terminal interface for monitoring running agents and streaming logs (alpha)
+
+---
+
+## Quick Start
+
+Three commands to get running:
+
+```bash
+git clone https://github.com/eddiedunn/claude-code-agent.git && cd claude-code-agent
+uv sync
+uv run grind run --task "Fix all ruff linting errors" --verify "ruff check src/"
+```
+
+> **Prerequisites**: Python 3.11+, [uv](https://github.com/astral-sh/uv), and the [Claude Code CLI](https://claude.ai/code) installed and authenticated.
+
+---
 
 ## Installation
 
 ```bash
-# Clone the repo
-cd claude_code_agent
+# Clone and enter the repo
+git clone https://github.com/eddiedunn/claude-code-agent.git
+cd claude-code-agent
 
-# Install dependencies
+# Install dependencies with uv
 uv sync
 
-# Verify Claude Code CLI is installed
+# Verify Claude Code CLI is available
 claude --version
 ```
 
-## Three Ways to Grind
+---
 
-### 1. Single Task
+## Usage Examples
 
-Fix one thing:
+### Single Task — fix-verify loop
+
+Run a single autonomous coding task with a verification command:
 
 ```bash
-uv run grind run --task "Fix failing unit tests" --verify "pytest tests/ -v"
+# Fix linting (uses Haiku by default — fast and cheap)
+uv run grind run --task "Fix all ruff linting errors" --verify "ruff check src/"
+
+# Fix type errors with more iterations
+uv run grind run -t "Fix all mypy type errors" -v "mypy src/ --strict" -n 15
 
 # Short form
 uv run grind -t "Fix tests" -v "pytest"
 ```
 
-### 2. Batch Mode
-
-When you have a list of tasks:
+### Batch Mode — run a task list from YAML
 
 ```bash
-# Create a tasks file (or use decompose to generate one)
 uv run grind batch tasks.yaml
 ```
 
-tasks.yaml format:
+`tasks.yaml` format:
+
 ```yaml
 tasks:
-  - task: "Fix auth tests"
+  - task: "Fix authentication test failures"
     verify: "pytest tests/auth/ -v"
+    model: haiku
     max_iterations: 5
 
-  - task: "Fix API tests"
+  - task: "Fix API endpoint tests"
     verify: "pytest tests/api/ -v"
-    max_iterations: 5
+    model: sonnet
+    max_iterations: 8
 ```
 
-### 3. Decompose Mode
+### Decompose — let Claude break down a large problem
 
-When you have a big problem and need Claude to break it down:
-
-**Option A: Using slash command in conversation**
-```
-Talk to Claude about your problems, then:
-/generate-tasks
-
-Reviews context and generates tasks.yaml automatically
-```
-
-**Option B: Using CLI decompose**
 ```bash
-# Analyze and create task list
+# Analyze the problem and generate a task list
 uv run grind decompose \
   --problem "Fix all 47 failing tests" \
   --verify "pytest tests/ -v" \
   --output tasks.yaml
 
-# Then run the generated tasks
+# Review the generated plan, then execute
+cat tasks.yaml
 uv run grind batch tasks.yaml
 ```
 
-## Experimental: TUI (Terminal Interface)
+### DAG Execution — parallel task scheduling
 
-⚠️ **Alpha Status** - Interactive terminal interface for grind orchestration.
+When tasks have dependencies, Grind Loop builds a DAG and schedules them for maximum parallelism:
 
-**What works:**
-- Interactive shell for running grind tasks
-- Command history and tab completion
-- Basic task execution and status tracking
+```yaml
+tasks:
+  - task: "Fix database models"
+    verify: "pytest tests/models/"
+    id: fix-models
 
-**What's planned:**
-- Real-time multi-agent monitoring
-- DAG visualization
-- Log streaming dashboard
-
-Try it:
-```bash
-# Launch TUI
-uv run grind tui
-
-# Launch with task file
-uv run grind tui -t tasks.yaml
+  - task: "Fix API endpoints that depend on models"
+    verify: "pytest tests/api/"
+    depends_on: [fix-models]
 ```
 
-Navigate tabs with 1-6 keys. Use tab 6 (Shell) for interactive commands.
+```bash
+uv run grind batch tasks.yaml  # fix-models runs first, then API tests run in parallel
+```
 
-## Merging Task Branches
+### Git Worktrees — conflict-free parallel execution
 
-After running DAG tasks with worktrees, you'll have multiple branches with fixes. Use the intelligent merge command to combine them:
+Each parallel task is automatically assigned an isolated Git worktree so branches never interfere:
+
+```bash
+# Grind Loop creates and manages worktrees automatically during DAG execution
+uv run grind batch dag-tasks.yaml --worktrees
+```
+
+### Merge — combine parallel worktree branches
+
+After parallel tasks complete, merge their branches intelligently:
 
 ```bash
 # Interactive merge with conflict resolution
@@ -139,63 +168,156 @@ uv run grind merge
 # Merge specific branches
 uv run grind merge fix/lint fix/tests fix/types
 
-# Custom pattern
-uv run grind merge --pattern "feature/*,bugfix/*"
-
 # With post-merge verification
 uv run grind merge --verify "pytest && ruff check"
 
-# Dry run (see what would be merged)
+# Dry run — see what would be merged without doing it
 uv run grind merge --dry-run
 ```
 
-**What makes this smart:**
-- ✓ Merges clean branches automatically
-- ⚠️ Prompts only when conflicts occur
-- 💾 Creates backup and staging branches (never touches main directly)
-- 🧪 Runs verification after merging
-- 📊 Shows clear summary with next steps
+When conflicts occur you are prompted to: show the diff, keep ours, keep theirs, skip the branch, or abort. A backup staging branch is always created before touching `main`.
 
-**Conflict resolution options:**
-When conflicts occur, you'll be prompted:
-1. Show diff (investigate the conflict)
-2. Keep ours (discard their changes)
-3. Keep theirs (accept their changes)
-4. Skip this branch (handle manually later)
-5. Abort entire merge
+---
 
-**After merging:**
-```bash
-# Review the merged result
-git diff main..grind-merge-20251207-1430
+## Architecture
 
-# If satisfied, merge to main
-git checkout main
-git merge grind-merge-20251207-1430 --ff-only
 ```
+┌─────────────────────────────────────────────────────────┐
+│                        CLI (grind.py)                   │
+│           run │ batch │ decompose │ merge │ tui          │
+└────────────────────────────┬────────────────────────────┘
+                             │
+              ┌──────────────▼──────────────┐
+              │        engine.py            │
+              │   Core fix-verify loop      │
+              │   grind() / decompose()     │
+              └──┬───────────┬─────────────┘
+                 │           │
+    ┌────────────▼──┐  ┌─────▼──────────┐
+    │  batch.py     │  │   hooks.py     │
+    │  Sequential / │  │  Slash command │
+    │  DAG runner   │  │  lifecycle     │
+    └────────────┬──┘  └────────────────┘
+                 │
+    ┌────────────▼────────────────────────┐
+    │        Claude Agent SDK             │
+    │  (Haiku / Sonnet / Opus instances)  │
+    │  CostAwareRouter  •  Extended Think │
+    └────────────┬────────────────────────┘
+                 │
+    ┌────────────▼────────────────────────┐
+    │         Git Worktrees               │
+    │  Isolated branch per parallel task  │
+    │  GrindMerger for conflict resolution│
+    └─────────────────────────────────────┘
+```
+
+**Module responsibilities:**
+
+| Module | Responsibility |
+|--------|---------------|
+| `grind/engine.py` | Core fix-verify loop orchestration, `grind()` and `decompose()` |
+| `grind/batch.py` | Batch and DAG task runner, parallel execution |
+| `grind/cli.py` | CLI argument parsing and command dispatch |
+| `grind/models.py` | All data structures (`TaskDefinition`, `GrindResult`, `GrindStatus`) |
+| `grind/prompts.py` | Prompt templates and `build_prompt()` |
+| `grind/hooks.py` | Slash command hook execution at lifecycle points |
+| `grind/tasks.py` | YAML/JSON task file loading and parsing |
+| `grind/utils.py` | ANSI output formatting and result display |
+
+---
+
+## CLI Reference
+
+### `grind run`
+
+| Option | Short | Default | Description |
+|--------|-------|---------|-------------|
+| `--task` | `-t` | required | Natural-language task description |
+| `--verify` | `-v` | required | Shell command to verify success (exit 0 = pass) |
+| `--max-iter` | `-n` | `10` | Maximum fix-verify iterations |
+| `--model` | `-m` | `haiku` | Model to use: `haiku`, `sonnet`, `opus` |
+| `--cwd` | `-c` | `.` | Working directory for the agent |
+| `--verbose` | | `false` | Stream full Claude output |
+| `--quiet` | `-q` | `false` | Suppress all non-essential output |
+
+### `grind batch`
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `file` | required | Path to YAML or JSON task list |
+| `--verbose` | `false` | Show full output per task |
+| `--stop-on-stuck` | `false` | Halt batch if any task gets stuck |
+
+### `grind decompose`
+
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--problem` | `-p` | High-level problem description |
+| `--verify` | `-v` | Verification command for generated subtasks |
+| `--output` | `-o` | File path to write generated `tasks.yaml` |
+| `--cwd` | `-c` | Working directory |
+| `--verbose` | | Show decomposition reasoning |
+
+### `grind merge`
+
+| Option | Description |
+|--------|-------------|
+| `[branches...]` | Branch names to merge (default: auto-detect) |
+| `--pattern` | Glob pattern for branch selection (e.g. `fix/*`) |
+| `--verify` | Command to run after merge |
+| `--dry-run` | Show merge plan without executing |
+
+### `grind tui`
+
+| Option | Description |
+|--------|-------------|
+| `-t` | Pre-load a task file on launch |
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | All tasks completed successfully |
+| `1` | Runtime error |
+| `2` | Agent got stuck (signaled `GRIND_STUCK`) |
+| `3` | Max iterations reached without success |
+
+---
+
+## Model Selection
+
+| Model | Alias | Best For | Input / Output (per 1M tokens) |
+|-------|-------|----------|-------------------------------|
+| Claude Haiku | `haiku` | Linting, formatting, simple fixes (~90% of tasks) | $0.25 / $1.25 |
+| Claude Sonnet | `sonnet` | Complex refactors, multi-file bugs | $3.00 / $15.00 |
+| Claude Opus | `opus` | Architecture, planning, decomposition | $15.00 / $75.00 |
+
+Start with `haiku` (the default). Haiku handles the vast majority of coding tasks at roughly 50x lower cost than Opus. Use `sonnet` for multi-file refactors and `opus` for high-level decomposition.
+
+---
 
 ## Real-World Examples
 
-### Fix All Failing Tests
+### Fix an Entire Test Suite
 
 ```bash
-# Let Claude analyze and decompose
+# Let Claude analyze and decompose all 47 failures into a parallel plan
 uv run grind decompose \
   -p "Fix all failing pytest tests" \
   -v "pytest tests/ -v --tb=short" \
   -o test-tasks.yaml
 
-# Review the generated tasks
+# Review the generated plan
 cat test-tasks.yaml
 
-# Run them
+# Execute — tasks with no dependencies run in parallel
 uv run grind batch test-tasks.yaml
 ```
 
-### Fix SonarQube Issues
+### Resolve All SonarQube Code Smells
 
 ```bash
-# Decompose by issue type/file
 uv run grind decompose \
   -p "Fix all SonarQube code smells and bugs" \
   -v "sonar-scanner && ./check-quality-gate.sh" \
@@ -204,164 +326,117 @@ uv run grind decompose \
 uv run grind batch sonar-tasks.yaml
 ```
 
-### Fix Linting Issues
+### Full Linting + Type-Check + Test Pipeline
 
 ```bash
-# Usually a single grind is enough for linting
-uv run grind run \
-  -t "Fix all ruff linting errors" \
-  -v "ruff check src/"
+# Run three independent fix tasks in parallel via worktrees
+uv run grind batch - <<'EOF'
+tasks:
+  - task: "Fix all ruff linting errors"
+    verify: "ruff check src/"
+    id: lint
+
+  - task: "Fix all mypy type errors"
+    verify: "mypy src/ --strict"
+    id: types
+
+  - task: "Fix failing unit tests (excluding integration)"
+    verify: "pytest tests/unit/ -v"
+    id: unit-tests
+    depends_on: [lint, types]
+EOF
 ```
 
-### Fix Type Errors
+---
 
-```bash
-uv run grind run \
-  -t "Fix all mypy type errors" \
-  -v "mypy src/ --strict" \
-  -n 15  # May need more iterations for complex type fixes
+## Slash Command Hooks
+
+Inject custom Claude Code slash commands at key lifecycle points:
+
+```yaml
+tasks:
+  - task: "Implement OAuth authentication"
+    verify: "pytest tests/auth/ -v && mypy src/auth/"
+    model: sonnet
+    max_iterations: 20
+    hooks:
+      pre_grind:
+        - "/compact"
+        - "/explain-codebase auth/"
+      post_iteration:
+        - command: "/compact"
+          trigger: every_n
+          trigger_count: 5
+      post_grind:
+        - "/code-review"
+        - "/security-audit"
 ```
 
-## Options
+Hook triggers: `once` · `every` · `every_n` · `on_error` · `on_success`
 
-### grind run
-| Option | Short | Default | Description |
-|--------|-------|---------|-------------|
-| --task | -t | required | What to fix |
-| --verify | -v | required | Command to verify (exit 0 = pass) |
-| --max-iter | -n | 10 | Max iterations |
-| --cwd | -c | . | Working directory |
-| --verbose | | false | Show full Claude output |
-| --quiet | -q | false | Minimal output |
+---
 
-### grind batch
-| Option | Description |
-|--------|-------------|
-| file | YAML/JSON file with task list |
-| --verbose | Show full output |
-| --stop-on-stuck | Stop if any task gets stuck |
+## Python API
 
-### grind decompose
-| Option | Short | Description |
-|--------|-------|-------------|
-| --problem | -p | Problem to analyze |
-| --verify | -v | Verification command |
-| --output | -o | Save tasks to file |
-| --cwd | -c | Working directory |
-| --verbose | | Show analysis |
+Use Grind Loop programmatically inside your own agentic workflows:
 
-## Exit Codes
+```python
+from grind import grind, TaskDefinition, GrindStatus
 
-| Code | Meaning |
-|------|---------|
-| 0 | Success |
-| 1 | Error |
-| 2 | Agent got stuck |
-| 3 | Max iterations reached |
+# Simple fix-verify loop
+task = TaskDefinition(
+    task="Fix linting errors",
+    verify="ruff check .",
+    model="haiku"
+)
 
-## Slash Commands
+result = await grind(task)
 
-Custom slash commands for use in Claude Code conversations:
-
-### `/generate-tasks`
-Generate a `tasks.yaml` file from conversation context.
-
-**Usage**: Just type `/generate-tasks` after discussing problems/goals with Claude.
-
-**It will**:
-- Analyze what you've been discussing
-- Break down into actionable tasks
-- Choose appropriate models
-- Generate properly formatted YAML
-- Write to file and show usage
-
-See [.claude/commands/README.md](./.claude/commands/README.md) for details.
-
-## Model Selection & Pricing
-
-Choose the right model for your task based on complexity and budget (December 2025 rates):
-
-| Model | Use Case | Input (per 1M tokens) | Output (per 1M tokens) |
-|-------|----------|----------------------|------------------------|
-| **haiku** (default) | Simple fixes, linting, formatting | $0.25 | $1.25 |
-| **sonnet** | Bug fixes, refactoring, medium complexity | $3.00 | $15.00 |
-| **opus** | Planning, architecture, complex logic | $15.00 | $75.00 |
-
-**Usage**:
-```bash
-# Use default (haiku)
-uv run grind run -t "Fix linting" -v "ruff check ."
-
-# Specify model explicitly
-uv run grind run -t "Refactor auth" -v "pytest tests/auth/" -m sonnet
+if result.status == GrindStatus.COMPLETE:
+    print(f"Done in {result.iterations} iterations!")
 ```
 
-**Recommendation**: Start with haiku for most tasks. Use sonnet for medium complexity work. Reserve opus for architectural decisions and complex planning tasks.
-
-## Tips
-
-1. **Use `/generate-tasks`** in conversations to automatically create task files
-2. **Start with decompose** for large problems - let Claude figure out the chunks
-3. **Review generated tasks** before running batch - you can edit the YAML
-4. **Use --verbose** while learning to see what Claude is doing
-5. **Lower max_iterations** for quick tasks, higher for complex ones
-6. **Good verification commands** give useful error output
-7. **Choose models wisely** - haiku for simple tasks, sonnet for medium complexity, opus for planning/architecture
+---
 
 ## Project Structure
 
 ```
-grind/
-  __init__.py    # Package exports
-  models.py      # Data structures
-  engine.py      # Core grind loop
-  hooks.py       # Slash command hooks
-  prompts.py     # Prompt templates
-  tasks.py       # Task loading
-  batch.py       # Batch execution
-  cli.py         # Command-line interface
-  utils.py       # Output formatting
-grind.py         # Entry point
-examples/
-  example-tasks.yaml   # Example task definitions
+claude-code-agent/
+├── grind/
+│   ├── __init__.py      # Public API exports
+│   ├── models.py        # Data structures and enums
+│   ├── engine.py        # Core fix-verify loop
+│   ├── batch.py         # Batch and DAG runner
+│   ├── cli.py           # Command-line interface
+│   ├── hooks.py         # Slash command lifecycle hooks
+│   ├── prompts.py       # Prompt templates
+│   ├── tasks.py         # YAML/JSON task loading
+│   └── utils.py         # Output formatting
+├── grind.py             # Entry point
+├── examples/
+│   └── example-tasks.yaml
+└── tests/
 ```
 
-## Using with Claude Code
+---
 
-Grind Loop is designed to work seamlessly with [Claude Code](https://claude.ai/code).
+## Contributing
 
-### Quick Setup
+Contributions are welcome. Please open an issue before submitting a pull request for significant changes.
 
-```bash
-# Install dependencies
-uv sync
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Install dev dependencies: `uv sync --group dev`
+4. Run the test suite: `uv run pytest`
+5. Lint: `uv run ruff check grind/`
+6. Submit a pull request
 
-# Install slash commands globally (optional but recommended)
-make install-commands
-```
+---
 
-Now use `/generate-tasks` in any Claude Code conversation to automatically generate task files!
+## License
 
-See **[Using with Claude Code](docs/guide/using-with-claude-code.md)** for complete integration guide.
+[MIT](LICENSE)
 
-## Documentation
+---
 
-**📚 [Full Documentation](https://eddiedunn.github.io/claude-code-agent/)** (MkDocs site)
-
-### Quick Links
-- **[Using with Claude Code](docs/guide/using-with-claude-code.md)** - Integration guide and workflows
-- **[Getting Started](docs/getting-started/installation.md)** - Installation and setup
-- **[Features Guide](docs/guide/features.md)** - Complete feature reference
-- **[Architecture](docs/architecture/overview.md)** - System design
-- **[SDK Reference](docs/sdk/overview.md)** - Claude Agent SDK docs
-
-### Local Development
-```bash
-# View documentation locally
-make docs
-
-# Or manually:
-uv run mkdocs serve
-```
-
-Then open http://127.0.0.1:8000
+*Built on [Anthropic's Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk) and [Claude Code](https://claude.ai/code).*
