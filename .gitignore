@@ -22,8 +22,8 @@ htmlcov/
 *.log
 coverage.xml
 
-# Track slash commands
-!.claude/
+# Track slash commands and project-level Claude config only
+.claude/
 !.claude/commands/
 !.claude/commands/*.md
 
@@ -35,10 +35,18 @@ coverage.xml
 *.p12
 node_modules/
 
+# Grind runtime data (all of it)
+.grind/
+
+# Claude session data (runtime/ephemeral)
+.claude/projects/
+.claude/todos/
+.claude/tasks/
+.claude/memory/
+*.jsonl
+
 # Sensitive / generated
 .scannerwork/
-.grind/logs/
-.grind/fuse/
 .pai-memory/
 .pai-experts/
 .mailmap
