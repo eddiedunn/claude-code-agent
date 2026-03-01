@@ -27,6 +27,14 @@ coverage.xml
 !.claude/commands/
 !.claude/commands/*.md
 
+# Security
+.env
+.env.*
+*.pem
+*.key
+*.p12
+node_modules/
+
 # Sensitive / generated
 .scannerwork/
 .grind/logs/
