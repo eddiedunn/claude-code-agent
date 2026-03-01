@@ -139,11 +139,10 @@ build:
 # SonarQube Analysis
 sonar-scan:
 	@echo "Running SonarQube baseline scan..."
-	@echo "Step 1: Retrieving SonarQube token..."
-	@TOKEN=$$(secret-manager show -o sonarqube/your-project/scan-token 2>/dev/null); \
-	if [ -z "$$TOKEN" ]; then \
-		echo "Error: No Project SonarQube token found"; \
-		echo "Run: secret-manager show sonarqube/your-project/scan-token"; \
+	@echo "Step 1: Checking for SonarQube token..."
+	@if [ -z "$${SONAR_TOKEN}" ]; then \
+		echo "Error: SONAR_TOKEN environment variable is not set"; \
+		echo "Export it before running: export SONAR_TOKEN=<your-token>"; \
 		exit 1; \
 	fi; \
 	echo "Step 2: Running tests with coverage..."; \
@@ -159,7 +158,7 @@ sonar-scan:
 		-Dsonar.exclusions="**/*test*/**,**/tests/**,**/__pycache__/**,**/venv/**,**/.venv/**,**/node_modules/**,**/tools/**,**/site/**,**/docs/**" \
 		-Dsonar.python.coverage.reportPaths=coverage.xml \
 		-Dsonar.host.url=$${SONAR_HOST_URL} \
-		-Dsonar.token="$$TOKEN"; \
+		-Dsonar.token="$${SONAR_TOKEN}"; \
 	echo ""; \
 	echo "Analysis complete! View results at:"; \
 	echo "$${SONAR_HOST_URL}/dashboard?id=grind-loop"
@@ -185,7 +184,7 @@ help:
 	@echo "  make format        - Format code with ruff"
 	@echo "  make format-check  - Check code formatting without changes"
 	@echo "  make check         - Run format + lint + test (pre-commit check)"
-	@echo "  make sonar-scan    - Run SonarQube scan with coverage (Project)"
+	@echo "  make sonar-scan    - Run SonarQube scan with coverage (requires SONAR_TOKEN env var)"
 	@echo ""
 	@echo "Documentation:"
 	@echo "  make docs          - Sync SDK docs and start dev server"

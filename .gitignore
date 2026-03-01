@@ -30,7 +30,11 @@ coverage.xml
 # Sensitive / generated
 .scannerwork/
 .grind/logs/
+.grind/fuse/
 .pai-memory/
+.pai-experts/
 .mailmap
 trivy-fs-report.json
 .claude/incident-reports/
+scrape-upwork.ts
+ansible.cfg
