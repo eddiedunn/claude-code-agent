@@ -132,6 +132,119 @@ async def handle_tui_command(args: argparse.Namespace) -> int:
     )
 
 
+async def handle_observe_command(args: argparse.Namespace) -> int:
+    """Handle the 'observe' command - start the observability server."""
+    from grind.observer.server import run_server_async
+
+    print(Color.header("=" * 60))
+    print(Color.header("GRIND OBSERVER"))
+    print(Color.header("=" * 60))
+    print(Color.info(f"Listening on: http://{args.host}:{args.port}"))
+    print(Color.info(f"Events endpoint: POST http://{args.host}:{args.port}/events"))
+    print(Color.info(f"Live stream: ws://{args.host}:{args.port}/stream"))
+    if args.db:
+        print(Color.info(f"Database: {args.db}"))
+    print(Color.header("=" * 60))
+
+    await run_server_async(host=args.host, port=args.port, db_path=args.db)
+    return 0
+
+
+async def handle_tmux_command(args: argparse.Namespace) -> int:
+    """Handle the 'tmux' command - launch Claude Code in a tmux session."""
+    from grind.tmux import (
+        TmuxError,
+        launch_claude_code_in_session,
+        list_sessions,
+    )
+
+    session_name = args.session or "grind"
+
+    # If --list, show sessions and exit
+    if getattr(args, 'list', False):
+        sessions = list_sessions()
+        if not sessions:
+            print(Color.info("No tmux sessions found"))
+        else:
+            print(Color.header(f"{'Session':<20} {'Windows':<10} {'Attached':<10}"))
+            print(Color.header("-" * 40))
+            for s in sessions:
+                attached = "yes" if s["attached"] == "1" else "no"
+                print(f"  {s['name']:<20} {s['windows']:<10} {attached:<10}")
+        return 0
+
+    print(Color.header("=" * 60))
+    print(Color.header("GRIND TMUX"))
+    print(Color.header("=" * 60))
+
+    # Install hooks if requested
+    if not args.no_hooks:
+        from grind.hooks_config import generate_hooks_config, install_hooks
+
+        observer_url = args.observer_url or "http://localhost:8421"
+        config = generate_hooks_config(observer_url)
+        settings_path = install_hooks(config, project_dir=args.cwd)
+        print(Color.success(f"Hooks installed: {settings_path}"))
+        print(Color.info(f"Observer URL: {observer_url}"))
+
+    try:
+        session = launch_claude_code_in_session(
+            session_name=session_name,
+            prompt=args.prompt,
+            model=args.model,
+            cwd=args.cwd,
+            agent_teams=args.agent_teams,
+        )
+        print(Color.success(f"Session created: {session}"))
+        print(Color.info(f"Attach with: tmux attach -t {session}"))
+        if args.attach:
+            import subprocess
+            subprocess.run(["tmux", "attach", "-t", session])
+    except TmuxError as e:
+        if "already exists" in str(e):
+            print(Color.warning(f"Session '{session_name}' already exists"))
+            print(Color.info(f"Attach with: tmux attach -t {session_name}"))
+            if args.attach:
+                import subprocess
+                subprocess.run(["tmux", "attach", "-t", session_name])
+        else:
+            print(Color.error(f"Error: {e}"))
+            return 1
+
+    return 0
+
+
+async def handle_hooks_command(args: argparse.Namespace) -> int:
+    """Handle the 'hooks' command - manage Claude Code hook configuration."""
+    from grind.hooks_config import (
+        generate_hooks_config,
+        install_hooks,
+        print_hooks_config,
+        uninstall_hooks,
+    )
+
+    if args.hooks_action == "show":
+        print_hooks_config(args.observer_url)
+        return 0
+
+    elif args.hooks_action == "install":
+        config = generate_hooks_config(args.observer_url)
+        path = install_hooks(config, project_dir=args.project_dir)
+        print(Color.success(f"Hooks installed to: {path}"))
+        return 0
+
+    elif args.hooks_action == "uninstall":
+        removed = uninstall_hooks(project_dir=args.project_dir)
+        if removed:
+            print(Color.success("Observer hooks removed"))
+        else:
+            print(Color.info("No observer hooks found to remove"))
+        return 0
+
+    print(Color.error("Usage: grind hooks [show|install|uninstall]"))
+    return 1
+
+
 async def handle_spawn_command(args: argparse.Namespace) -> int:
     """Handle the 'spawn' command - spawn agents from a tasks file.
 
@@ -307,11 +420,23 @@ async def main_async(args: argparse.Namespace) -> int:
     elif args.command == "spawn":
         return await handle_spawn_command(args)
 
-    print(Color.error("Usage: grind.py [run|batch|decompose|tui|dag|spawn] [options]"))
-    print(Color.dim("  grind.py run -t 'Fix tests' -v 'pytest' -m sonnet"))
-    print(Color.dim("  grind.py batch tasks.yaml"))
-    print(Color.dim("  grind.py decompose -p 'Fix failures' -v 'pytest' -o tasks.yaml"))
-    print(Color.dim("  grind.py spawn -t tasks.yaml"))
+    elif args.command == "observe":
+        return await handle_observe_command(args)
+
+    elif args.command == "tmux":
+        return await handle_tmux_command(args)
+
+    elif args.command == "hooks":
+        return await handle_hooks_command(args)
+
+    print(Color.error("Usage: grind [run|batch|decompose|dag|spawn|observe|tmux|hooks] [options]"))
+    print(Color.dim("  grind run -t 'Fix tests' -v 'pytest' -m sonnet"))
+    print(Color.dim("  grind batch tasks.yaml"))
+    print(Color.dim("  grind decompose -p 'Fix failures' -v 'pytest' -o tasks.yaml"))
+    print(Color.dim("  grind spawn -t tasks.yaml"))
+    print(Color.dim("  grind observe                              # Start observer server"))
+    print(Color.dim("  grind tmux --session my-project --attach   # Launch in tmux"))
+    print(Color.dim("  grind hooks install                        # Install observer hooks"))
     return 1
 
 
@@ -410,6 +535,81 @@ def main():
         "--verbose", "-v", action="store_true",
         help="Enable verbose logging"
     )
+
+    # Observer server
+    observe_parser = sub.add_parser(
+        "observe",
+        help="Start the observability server (receives hook events)"
+    )
+    observe_parser.add_argument(
+        "--host", default="0.0.0.0",
+        help="Host to bind to (default: 0.0.0.0)"
+    )
+    observe_parser.add_argument(
+        "--port", type=int, default=8421,
+        help="Port to listen on (default: 8421)"
+    )
+    observe_parser.add_argument(
+        "--db", default=None,
+        help="SQLite database path (default: ~/.grind/observer.db)"
+    )
+
+    # Tmux session launcher
+    tmux_parser = sub.add_parser(
+        "tmux",
+        help="Launch Claude Code in a tmux session with observability"
+    )
+    tmux_parser.add_argument(
+        "--session", "-s", default="grind",
+        help="Tmux session name (default: grind)"
+    )
+    tmux_parser.add_argument(
+        "--model", "-m", default="opus",
+        choices=["sonnet", "opus", "haiku"],
+        help="Claude model (default: opus)"
+    )
+    tmux_parser.add_argument(
+        "--cwd", "-c", default=None,
+        help="Working directory"
+    )
+    tmux_parser.add_argument(
+        "--prompt", "-p", default=None,
+        help="Initial prompt to send to Claude Code"
+    )
+    tmux_parser.add_argument(
+        "--attach", "-a", action="store_true",
+        help="Attach to the session after creation"
+    )
+    tmux_parser.add_argument(
+        "--agent-teams", action="store_true",
+        help="Enable CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"
+    )
+    tmux_parser.add_argument(
+        "--no-hooks", action="store_true",
+        help="Skip installing observer hooks"
+    )
+    tmux_parser.add_argument(
+        "--observer-url", default=None,
+        help="Observer server URL (default: http://localhost:8421)"
+    )
+    tmux_parser.add_argument(
+        "--list", "-l", action="store_true",
+        help="List existing tmux sessions"
+    )
+
+    # Hooks management
+    hooks_parser = sub.add_parser(
+        "hooks",
+        help="Manage Claude Code observer hooks"
+    )
+    hooks_sub = hooks_parser.add_subparsers(dest="hooks_action")
+    hooks_show = hooks_sub.add_parser("show", help="Show hook configuration")
+    hooks_show.add_argument("--observer-url", default=None)
+    hooks_install = hooks_sub.add_parser("install", help="Install hooks into settings")
+    hooks_install.add_argument("--observer-url", default=None)
+    hooks_install.add_argument("--project-dir", default=None)
+    hooks_uninstall = hooks_sub.add_parser("uninstall", help="Remove observer hooks")
+    hooks_uninstall.add_argument("--project-dir", default=None)
 
     p.add_argument("--task", "-t")
     p.add_argument("--verify", "-v")
