@@ -38,6 +38,9 @@ node_modules/
 # Grind runtime data (all of it)
 .grind/
 
+# mkdocs build output
+site/
+
 # Claude session data (runtime/ephemeral)
 .claude/projects/
 .claude/todos/

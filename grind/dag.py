@@ -21,7 +21,7 @@ from grind.logging import (
     write_session_summary,
 )
 from grind.models import DAGResult, GrindResult, GrindStatus, TaskGraph, TaskNode
-from grind.orchestration.events import AgentEvent, EventBus, EventType
+from grind.events import AgentEvent, EventBus, EventType
 from grind.worktree import WorktreeManager
 
 

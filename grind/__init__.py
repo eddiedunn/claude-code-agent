@@ -1,6 +1,7 @@
 from grind.batch import run_batch
 from grind.dag import DAGExecutor
 from grind.engine import decompose, grind
+from grind.events import AgentEvent, EventBus, EventType
 from grind.hooks import execute_hooks, execute_slash_command
 from grind.logging import (
     disable_logging,
@@ -27,17 +28,19 @@ from grind.models import (
 )
 from grind.prompts import CONTINUE_PROMPT, DECOMPOSE_PROMPT, GRIND_PROMPT, build_prompt
 from grind.tasks import build_task_graph, load_tasks, parse_task_from_yaml
-from grind.tui.main import run_tui
 from grind.utils import Color, print_batch_summary, print_result
 from grind.worktree import WorktreeError, WorktreeManager
 
 __all__ = [
+    "AgentEvent",
     "BatchResult",
     "CONTINUE_PROMPT",
     "Color",
     "DAGExecutor",
     "DAGResult",
     "DECOMPOSE_PROMPT",
+    "EventBus",
+    "EventType",
     "GRIND_PROMPT",
     "GrindHooks",
     "GrindResult",
@@ -67,7 +70,6 @@ __all__ = [
     "print_result",
     "reset_logger",
     "run_batch",
-    "run_tui",
     "set_log_dir",
     "setup_logger",
 ]

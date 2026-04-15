@@ -8,7 +8,6 @@ from grind.batch import run_batch
 from grind.engine import decompose, grind
 from grind.models import GrindStatus, InteractiveConfig, TaskDefinition
 from grind.tasks import load_tasks
-from grind.tui.main import run_tui
 from grind.utils import Color, print_batch_summary, print_result
 
 
@@ -123,15 +122,6 @@ async def handle_decompose_command(args: argparse.Namespace) -> int:
     return 0
 
 
-async def handle_tui_command(args: argparse.Namespace) -> int:
-    """Handle the 'tui' command - launch the TUI interface."""
-    return await run_tui(
-        task_file=args.task_file,
-        model=args.model,
-        verbose=args.verbose
-    )
-
-
 async def handle_observe_command(args: argparse.Namespace) -> int:
     """Handle the 'observe' command - start the observability server."""
     from grind.observer.server import run_server_async
@@ -243,36 +233,6 @@ async def handle_hooks_command(args: argparse.Namespace) -> int:
 
     print(Color.error("Usage: grind hooks [show|install|uninstall]"))
     return 1
-
-
-async def handle_spawn_command(args: argparse.Namespace) -> int:
-    """Handle the 'spawn' command - spawn agents from a tasks file.
-
-    This is a convenience command that launches the TUI with auto-spawning
-    of agents from a tasks file. Equivalent to: grind tui -t tasks.yaml
-    """
-    if not args.task_file:
-        print(Color.error("Error: --task-file is required"))
-        return 1
-
-    # Check if file exists
-    task_path = Path(args.task_file)
-    if not task_path.exists():
-        print(Color.error(f"Error: Task file not found: {args.task_file}"))
-        return 1
-
-    print(Color.header("=" * 60))
-    print(Color.header("SPAWNING AGENTS"))
-    print(Color.header("=" * 60))
-    print(Color.info(f"Loading tasks from: {args.task_file}"))
-    print(Color.info("Launching TUI with auto-spawn mode..."))
-    print(Color.header("=" * 60))
-
-    return await run_tui(
-        task_file=args.task_file,
-        model=args.model,
-        verbose=args.verbose
-    )
 
 
 def _print_dag_dry_run(graph):
@@ -411,14 +371,8 @@ async def main_async(args: argparse.Namespace) -> int:
     elif args.command == "decompose":
         return await handle_decompose_command(args)
 
-    elif args.command == "tui":
-        return await handle_tui_command(args)
-
     elif args.command == "dag":
         return await handle_dag_command(args)
-
-    elif args.command == "spawn":
-        return await handle_spawn_command(args)
 
     elif args.command == "observe":
         return await handle_observe_command(args)
@@ -429,11 +383,11 @@ async def main_async(args: argparse.Namespace) -> int:
     elif args.command == "hooks":
         return await handle_hooks_command(args)
 
-    print(Color.error("Usage: grind [run|batch|decompose|dag|spawn|observe|tmux|hooks] [options]"))
+    print(Color.error("Usage: grind [run|batch|decompose|dag|observe|tmux|hooks] [options]"))
     print(Color.dim("  grind run -t 'Fix tests' -v 'pytest' -m sonnet"))
     print(Color.dim("  grind batch tasks.yaml"))
     print(Color.dim("  grind decompose -p 'Fix failures' -v 'pytest' -o tasks.yaml"))
-    print(Color.dim("  grind spawn -t tasks.yaml"))
+    print(Color.dim("  grind dag tasks.yaml --parallel 3 --worktrees"))
     print(Color.dim("  grind observe                              # Start observer server"))
     print(Color.dim("  grind tmux --session my-project --attach   # Launch in tmux"))
     print(Color.dim("  grind hooks install                        # Install observer hooks"))
@@ -496,44 +450,6 @@ def main():
     dag_parser.add_argument(
         "--cleanup-worktrees", action="store_true",
         help="Remove all .worktrees/ before starting"
-    )
-
-    # TUI interface
-    tui_parser = sub.add_parser(
-        "tui",
-        help="Launch the Agent Orchestration TUI"
-    )
-    tui_parser.add_argument(
-        "--task-file", "-t",
-        help="Optional tasks.yaml to load on startup"
-    )
-    tui_parser.add_argument(
-        "--model", "-m", default="haiku",
-        choices=["sonnet", "opus", "haiku"],
-        help="Default model for new agents (default: haiku - faster/cheaper for most tasks)"
-    )
-    tui_parser.add_argument(
-        "--verbose", "-v", action="store_true",
-        help="Enable verbose logging"
-    )
-
-    # Spawn agents from a tasks file
-    spawn_parser = sub.add_parser(
-        "spawn",
-        help="Spawn agents from a tasks file (launches TUI with auto-spawn)"
-    )
-    spawn_parser.add_argument(
-        "--task-file", "-t", required=True,
-        help="Tasks file to load and spawn agents from"
-    )
-    spawn_parser.add_argument(
-        "--model", "-m", default="haiku",
-        choices=["sonnet", "opus", "haiku"],
-        help="Default model for new agents (default: haiku)"
-    )
-    spawn_parser.add_argument(
-        "--verbose", "-v", action="store_true",
-        help="Enable verbose logging"
     )
 
     # Observer server

@@ -47,7 +47,7 @@ from grind.logging import (
     setup_logger,
 )
 from grind.models import CheckpointAction, GrindResult, GrindStatus, TaskDefinition
-from grind.orchestration.events import AgentEvent, EventBus, EventType
+from grind.events import AgentEvent, EventBus, EventType
 from grind.prompts import CONTINUE_PROMPT, DECOMPOSE_PROMPT, build_prompt
 from grind.router import CostAwareRouter
 from grind.utils import Color
