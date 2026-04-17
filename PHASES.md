@@ -38,7 +38,7 @@ self-evolution loop.
 | 3 | execution contracts primitive | COMPLETE — commit 74ddb0c, 52/52 tests |
 | 4 | agent teams (single self-evolution loop) | COMPLETE — commit 7442e44, 73/73 tests |
 | 5 | SDK custom agents via subtraction | COMPLETE — 27/27 tests |
-| 6 | orchestrator (planner + generator + using-evaluator) | was Phase 5 |
+| 6 | orchestrator (planner + generator + using-evaluator) | COMPLETE — 12/12 tests, 100% coverage |
 | 7 | harness-as-optimization-target (MetaHarness-style) | NEW — optional |
 
 ## Phase 2 — Worktrees as file-backed state
