@@ -5,10 +5,38 @@ and cleaning up Git worktrees. Each task can run in an isolated worktree
 on its own branch, preventing Git conflicts during parallel execution.
 
 Phase 2 adds file-backed state: every worktree has a `state/` subtree
-that agents read/write.  The best-of-N merge API (spawn_pool / accept_from_pool)
-lets N candidate worktrees race; only the accepted one folds to main.
+that agents read/write. The ``accept()`` method is the acceptance gate
+used by SelfEvolutionLoop: one worktree wins, its changes fold to main,
+then it is torn down.
 
 See docs/dag-execution-design.md for architecture details.
+
+---
+DESIGN NOTE — Best-of-N (parallel candidate) pattern
+-----------------------------------------------------
+WorktreeManager and its accept() gate support a "best-of-N" workflow where
+multiple candidate worktrees race in parallel and one is selected. This is an
+opt-in broadening pattern, NOT the default execution path.
+
+Default path: SelfEvolutionLoop (sequential retry with a single worktree).
+Use best-of-N only when:
+  - The acceptance gate is DETERMINISTIC (contract validation, unit tests,
+    compilation) — no learned judge or LLM-graded evaluator.
+  - Task variance is high enough that parallel sampling covers more of the
+    solution space than sequential retry would.
+
+Why the deterministic-gate constraint matters:
+  Tsinghua/Stanford ablation studies (2024–2025) found that best-of-N with a
+  LEARNED verifier/judge hurts performance. On SWE-Bench the verifier penalty
+  ranged from −0.8 to −8.4 pts vs. sequential retry; on OSWorld, a learned
+  evaluator acceptance gate cost −5.6 pts. The mechanism: judge errors
+  compound generator errors, and the "winning" candidate is often the one
+  that best games the judge, not the one that actually solves the task.
+
+  A deterministic gate (tests pass / contract validates / binary compiles)
+  carries zero judge-error amplification and does not have this failure mode.
+  Phase 7 (harness optimisation) comparing harness proposals is one example
+  where parallel candidates make sense under a deterministic acceptance gate.
 """
 
 import asyncio
@@ -16,7 +44,6 @@ import json
 import subprocess
 import time
 import urllib.request
-from dataclasses import dataclass
 from pathlib import Path
 
 from grind.observer.models import EventType
@@ -25,18 +52,6 @@ from grind.observer.models import EventType
 class WorktreeError(Exception):
     """Error during worktree operations."""
     pass
-
-
-@dataclass
-class WorktreePool:
-    """A set of candidate worktrees for one logical task.
-
-    Used by spawn_pool / accept_from_pool to implement best-of-N merge:
-    spawn N candidates, pick the winner, tear down the rest.
-    """
-    task_id: str
-    candidates: list[str]  # list of candidate task_ids  # fix #9: renamed from worktrees
-    accepted: str | None = None
 
 
 class WorktreeManager:
@@ -53,8 +68,8 @@ class WorktreeManager:
           ``state/manifest.json`` tracking lifecycle status.
         - ``observer_url`` enables optional event emission to the
           observer server (never blocks worktree ops if unavailable).
-        - ``accept()`` merges one worktree to a target branch.
-        - ``spawn_pool()`` / ``accept_from_pool()`` implement best-of-N.
+        - ``accept()`` merges one worktree to a target branch and tears
+          it down. This is the acceptance gate used by SelfEvolutionLoop.
     """
 
     def __init__(
@@ -360,8 +375,17 @@ class WorktreeManager:
     async def accept(self, task_id: str, target_branch: str = "main") -> None:
         """Merge one worktree's branch to target_branch and emit ACCEPTED event.
 
-        This is the acceptance gate for best-of-N: one worktree wins,
-        its changes fold to main, then it's torn down.
+        This is the acceptance gate used by SelfEvolutionLoop (sequential retry,
+        the default path) and optionally by a best-of-N parallel workflow.
+
+        IMPORTANT — best-of-N usage:
+            Only call accept() as a best-of-N selector when the caller has already
+            applied a DETERMINISTIC gate (e.g., all tests pass, contract validates).
+            Do NOT use a learned judge or LLM-graded evaluator as the selector;
+            Tsinghua/Stanford ablations show learned-judge best-of-N degrades
+            performance (−0.8 to −8.4 pts on SWE-Bench, −5.6 pts on OSWorld)
+            because judge errors compound generator errors. Deterministic gates
+            carry no judge-error amplification and are safe.
 
         Steps:
         1. Resolve the worktree's branch via ``git worktree list --porcelain``.
@@ -481,77 +505,3 @@ class WorktreeManager:
         # Tear down worktree (cleanup emits teardown event + deletes branch)
         await self.cleanup(task_id, force=True)
 
-    async def spawn_pool(
-        self, task_id: str, n: int, base_branch: str = "HEAD"
-    ) -> WorktreePool:
-        """Spawn N candidate worktrees for one logical task.
-
-        Each candidate is named ``{task_id}-{i}`` with branch
-        ``grind/{task_id}-{i}``.
-
-        Args:
-            task_id: Logical task identifier shared by all candidates.
-            n: Number of candidate worktrees to create.
-            base_branch: Git ref used as the base for every candidate branch.
-
-        Returns:
-            A :class:`WorktreePool` containing the candidate task_ids.
-
-        Raises:
-            WorktreeError: If any candidate worktree fails to create.
-        """
-        # fix #2: rollback on partial failure
-        created: list[str] = []
-        try:
-            for i in range(n):
-                candidate_id = f"{task_id}-{i}"
-                branch = f"grind/{task_id}-{i}"
-                await self.create(candidate_id, branch, base_branch)
-                created.append(candidate_id)
-        except Exception:
-            for cid in created:
-                try:
-                    await self.cleanup(cid, force=True)
-                except WorktreeError:
-                    pass
-            raise
-        return WorktreePool(task_id=task_id, candidates=created)
-
-    async def accept_from_pool(
-        self,
-        pool: WorktreePool,
-        winner_idx: int,
-        target_branch: str = "main",
-    ) -> None:
-        """Accept one worktree from a pool and tear down the rest.
-
-        Args:
-            pool: The :class:`WorktreePool` returned by :meth:`spawn_pool`.
-            winner_idx: Index into ``pool.candidates`` identifying the winner.
-            target_branch: Branch that receives the winning merge.
-
-        Raises:
-            IndexError: If ``winner_idx`` is out of range.
-            WorktreeError: If acceptance or cleanup fails.
-        """
-        # fix #4: guard against concurrent accept
-        if pool.accepted is not None:
-            raise WorktreeError(
-                f"Pool '{pool.task_id}' already has an accepted worktree: {pool.accepted}"
-            )
-
-        winner_id = pool.candidates[winner_idx]  # fix #9: use candidates
-
-        # Accept the winner (merge + teardown)
-        await self.accept(winner_id, target_branch)
-
-        # Tear down all remaining candidates
-        for wt_id in pool.candidates:  # fix #9: use candidates
-            if wt_id == winner_id:
-                continue
-            try:
-                await self.cleanup(wt_id, force=True)
-            except WorktreeError:
-                pass  # best-effort; don't abort if one cleanup fails
-
-        pool.accepted = winner_id

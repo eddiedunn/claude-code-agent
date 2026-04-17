@@ -10,6 +10,29 @@ Why tmux (not a TUI framework):
 - tmux survives terminal disconnects
 - tmux panes are the visual backbone for observability
 - No Python library — we call the tmux CLI directly (Dan's approach)
+
+---
+SCOPE NOTE — Phase 1 primitive, not on the default execution path
+-----------------------------------------------------------------
+This module is a Phase 1 infrastructure primitive. It provides the visual
+backbone (pane-per-agent layout) and is used by the observer/hooks layer and
+the ``grind tmux`` CLI command. Do not remove.
+
+It is NOT on the default SelfEvolutionLoop execution path. The loop runs
+agents sequentially inside isolated git worktrees (grind/worktree.py) and
+does not require tmux to function. Tmux becomes relevant for:
+  - Human-visible dashboards / live agent monitoring
+  - Experimental parallel best-of-N runs where each candidate agent needs
+    its own visible pane (opt-in, requires a deterministic acceptance gate —
+    see grind/worktree.py module docstring for the learned-judge warning)
+  - Phase 7 harness optimisation where comparing parallel harness proposals
+    side-by-side in separate panes is useful
+
+IMPORTANT — if you extend this module to drive parallel agent panes for a
+best-of-N workflow, use only a deterministic acceptance gate (tests pass,
+contract validates, binary compiles). Tsinghua/Stanford ablations show
+learned-judge best-of-N degrades performance (−0.8 to −8.4 pts on SWE-Bench,
+−5.6 pts on OSWorld) because judge errors compound generator errors.
 """
 
 import shlex

@@ -31,12 +31,14 @@ class EventType(str, Enum):
     - worktree_accepted: Worktree accepted and merged to target branch
     - worktree_teardown: Worktree removed after completion or rejection
     - contract_violation: Execution contract was violated (Phase 3)
+    - agent_retry: Self-evolution loop begins a retry attempt (Phase 4)
     """
     SESSION_START = "session_start"
     PRE_TOOL_USE = "pre_tool_use"
     POST_TOOL_USE = "post_tool_use"
     AGENT_SPAWN = "agent_spawn"
     AGENT_COMPLETE = "agent_complete"
+    AGENT_RETRY = "agent_retry"
     USER_PROMPT = "user_prompt"
     ERROR = "error"
     WORKTREE_SPAWN = "worktree_spawn"
