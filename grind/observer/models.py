@@ -27,6 +27,9 @@ class EventType(str, Enum):
     - agent_complete: Sub-agent finished work
     - user_prompt: User sent a prompt
     - error: Something went wrong
+    - worktree_spawn: Git worktree created for task isolation
+    - worktree_accepted: Worktree accepted and merged to target branch
+    - worktree_teardown: Worktree removed after completion or rejection
     """
     SESSION_START = "session_start"
     PRE_TOOL_USE = "pre_tool_use"
@@ -35,6 +38,9 @@ class EventType(str, Enum):
     AGENT_COMPLETE = "agent_complete"
     USER_PROMPT = "user_prompt"
     ERROR = "error"
+    WORKTREE_SPAWN = "worktree_spawn"
+    WORKTREE_ACCEPTED = "worktree_accepted"
+    WORKTREE_TEARDOWN = "worktree_teardown"
 
 
 @dataclass
@@ -98,7 +104,11 @@ class AgentEvent:
         - tool_name (for tool hooks)
         - tool_input (for tool hooks)
         """
-        event_type = EventType(hook_type) if hook_type in EventType._value2member_map_ else EventType.ERROR
+        event_type = (
+            EventType(hook_type)
+            if hook_type in EventType._value2member_map_
+            else EventType.ERROR
+        )
 
         return cls(
             event_type=event_type,
