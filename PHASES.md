@@ -34,7 +34,7 @@ self-evolution loop.
 | Phase | Topic | Status |
 |------:|-------|--------|
 | 1 | tmux + observability | COMPLETE — commit c414dd7, 12/12 tests |
-| 2 | git worktree isolation as file-backed state | NOT STARTED |
+| 2 | git worktree isolation as file-backed state | COMPLETE — commit 6427516, 25/25 tests |
 | 3 | execution contracts primitive | NEW — inserted |
 | 4 | agent teams (single self-evolution loop) | was Phase 3 |
 | 5 | SDK custom agents via subtraction | was Phase 4 |
