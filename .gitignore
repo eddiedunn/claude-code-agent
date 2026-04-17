@@ -22,10 +22,50 @@ htmlcov/
 *.log
 coverage.xml
 
-# Track slash commands and project-level Claude config only
-.claude/
-!.claude/commands/
-!.claude/commands/*.md
+# Claude Code — runtime/ephemeral files (never commit)
+# Credentials and personal overrides
+.claude/settings.local.json
+
+# Session and history data
+.claude/projects/
+.claude/shell-snapshots/
+.claude/paste-cache/
+.claude/history.jsonl
+.claude/file-history/
+
+# Caches and telemetry
+.claude/cache/
+.claude/statsig/
+.claude/stats-cache.json
+.claude/ide/
+.claude/debug/
+
+# Task and planning runtime state
+.claude/todos/
+.claude/tasks/
+.claude/plans/
+.claude/memory/
+.claude/incident-reports/
+
+# Plugin runtime state
+.claude/plugins/
+
+# Team/org telemetry
+.claude/teams/
+
+# Per-machine subagent memory (memory: local frontmatter)
+.claude/agent-memory-local/
+
+# Skill runtime artifacts (keep SKILL.md and static bundled files)
+.claude/skills/**/.cache/
+.claude/skills/**/*.log
+.claude/skills/**/browser_state/
+.claude/skills/**/data/
+
+# Temp files
+.claude/tmpclaude-*
+.claude/terminal_title
+.claude/terminal_title_task
 
 # Security
 .env
@@ -41,19 +81,11 @@ node_modules/
 # mkdocs build output
 site/
 
-# Claude session data (runtime/ephemeral)
-.claude/projects/
-.claude/todos/
-.claude/tasks/
-.claude/memory/
-*.jsonl
-
 # Sensitive / generated
 .scannerwork/
 .pai-memory/
 .pai-experts/
 .mailmap
 trivy-fs-report.json
-.claude/incident-reports/
 scrape-upwork.ts
 ansible.cfg

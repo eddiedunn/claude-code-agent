@@ -35,9 +35,9 @@ self-evolution loop.
 |------:|-------|--------|
 | 1 | tmux + observability | COMPLETE — commit c414dd7, 12/12 tests |
 | 2 | git worktree isolation as file-backed state | COMPLETE — commit 6427516, 25/25 tests |
-| 3 | execution contracts primitive | NEW — inserted |
-| 4 | agent teams (single self-evolution loop) | was Phase 3 |
-| 5 | SDK custom agents via subtraction | was Phase 4 |
+| 3 | execution contracts primitive | COMPLETE — commit 74ddb0c, 52/52 tests |
+| 4 | agent teams (single self-evolution loop) | COMPLETE — commit 7442e44, 73/73 tests |
+| 5 | SDK custom agents via subtraction | COMPLETE — 27/27 tests |
 | 6 | orchestrator (planner + generator + using-evaluator) | was Phase 5 |
 | 7 | harness-as-optimization-target (MetaHarness-style) | NEW — optional |
 
@@ -137,6 +137,14 @@ traces as input. Analogous to Stanford's MetaHarness.
 
 **Precondition:** Phases 1–6 have produced a corpus of raw traces large
 enough to drive optimization. Don't attempt this before that corpus exists.
+
+**Re-evaluate best-of-N here.** The Phase 4 pruning pass removed `spawn_pool`
+/ `accept_from_pool` / `WorktreePool` from `grind/worktree.py` because the
+default path doesn't need them. Phase 7 is the natural place to revisit: the
+evaluator comparing N harness proposals is exactly the deterministic-gate
+best-of-N pattern that the ablations do *not* penalise. Recover the primitives
+from git (`git show 7442e44~1:grind/worktree.py`) if Phase 7 needs parallel
+candidate harnesses.
 
 ## Non-goals
 
