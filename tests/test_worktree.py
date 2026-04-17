@@ -84,7 +84,7 @@ class TestWorktreeManager:
         path = await manager.create("task_1", "feature/task-1")
         assert path.exists()
 
-        await manager.cleanup("task_1")
+        await manager.cleanup("task_1", force=True)
         assert not path.exists()
 
     @pytest.mark.asyncio
@@ -144,7 +144,7 @@ class TestWorktreeManager:
         await manager.create("task_2", "feature/task-2")
         await manager.create("task_3", "feature/task-3")
 
-        count = await manager.cleanup_all()
+        count = await manager.cleanup_all(force=True)
 
         assert count == 3
         assert not (git_repo / ".worktrees" / "task_1").exists()

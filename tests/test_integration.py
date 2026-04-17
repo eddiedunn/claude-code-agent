@@ -182,8 +182,8 @@ async def test_worktree_lifecycle(git_repo):
     worktrees = await manager.list_worktrees()
     assert any("test_task" in w.get("path", "") for w in worktrees)
 
-    # Cleanup
-    await manager.cleanup("test_task")
+    # Cleanup (force=True needed because create() writes untracked state/manifest.json)
+    await manager.cleanup("test_task", force=True)
     assert not path.exists()
 
     # Cleanup all handles empty gracefully

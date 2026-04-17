@@ -30,6 +30,7 @@ class EventType(str, Enum):
     - worktree_spawn: Git worktree created for task isolation
     - worktree_accepted: Worktree accepted and merged to target branch
     - worktree_teardown: Worktree removed after completion or rejection
+    - contract_violation: Execution contract was violated (Phase 3)
     """
     SESSION_START = "session_start"
     PRE_TOOL_USE = "pre_tool_use"
@@ -41,6 +42,7 @@ class EventType(str, Enum):
     WORKTREE_SPAWN = "worktree_spawn"
     WORKTREE_ACCEPTED = "worktree_accepted"
     WORKTREE_TEARDOWN = "worktree_teardown"
+    CONTRACT_VIOLATION = "contract_violation"
 
 
 @dataclass
