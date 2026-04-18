@@ -1,124 +1,119 @@
 import argparse
 import asyncio
+import functools
+import hashlib
+import json
+import sqlite3
+import time as _time
+from datetime import datetime
 from pathlib import Path
 
-import yaml
-
-from grind.batch import run_batch
-from grind.engine import decompose, grind
-from grind.models import GrindStatus, InteractiveConfig, TaskDefinition
-from grind.tasks import load_tasks
-from grind.utils import Color, print_batch_summary, print_result
+from grind.utils import Color
 
 
-async def handle_run_command(args: argparse.Namespace) -> int:
-    """Handle the 'run' command - execute a single task."""
-    print(Color.header("=" * 60))
-    print(Color.header("GRIND LOOP"))
-    print(Color.header("=" * 60))
-    print(Color.info(f"Task: {args.task}"))
-    print(Color.info(f"Verify: {args.verify}"))
-    print(Color.info(f"Model: {args.model}"))
-    print(Color.header("=" * 60))
+async def handle_evolve_command(args: argparse.Namespace) -> int:
+    """Handle 'grind run --repo ... --prompt ...' — self-evolution loop."""
+    from grind.contract import ExecutionContract
+    from grind.executor import claude_executor
+    from grind.team import AgentTask, SelfEvolutionLoop
 
-    interactive_config = InteractiveConfig(
-        enabled=getattr(args, 'interactive', False),
-    )
-
-    task_def = TaskDefinition(
-        task=args.task,
-        verify=args.verify,
-        max_iterations=args.max_iter,
-        cwd=args.cwd if args.cwd != "." else None,
-        model=args.model,
-        interactive=interactive_config,
-    )
-
-    iteration_callback = (
-        (lambda n, s: print(f"\n[Iteration {n}]"))
-        if not getattr(args, 'quiet', False)
-        else None
-    )
-    result = await grind(task_def, args.verbose, iteration_callback)
-    print_result(result)
-    if result.status == GrindStatus.COMPLETE:
-        return 0
-    elif result.status == GrindStatus.STUCK:
-        return 2
-    else:
+    if not getattr(args, "repo", None):
+        print(Color.error("Error: --repo is required"))
+        return 1
+    if not getattr(args, "prompt", None):
+        print(Color.error("Error: --prompt is required"))
         return 1
 
+    contract_file = getattr(args, "contract_file", None)
+    contract_cmd = getattr(args, "contract_cmd", None)
 
-async def handle_batch_command(args: argparse.Namespace) -> int:
-    """Handle the 'batch' command - execute multiple tasks from a file."""
-    # Determine working directory: explicit --cwd overrides, else infer from tasks file
-    base_cwd = args.cwd if args.cwd else None
-    tasks = load_tasks(args.file, base_cwd)
+    if not contract_file and not contract_cmd:
+        print(Color.error("Error: provide --contract-file or --contract-cmd"))
+        return 1
+    if contract_file and contract_cmd:
+        print(Color.error("Error: --contract-file and --contract-cmd are mutually exclusive"))
+        return 1
 
-    # Apply interactive config from CLI to all tasks (unless task specifies its own)
-    if getattr(args, 'interactive', False):
-        interactive_config = InteractiveConfig(enabled=True)
-        for task in tasks:
-            if not task.interactive.enabled:
-                task.interactive = interactive_config
+    task_id = getattr(args, "task_id", None) or _generate_task_id()
+    model = getattr(args, "model", "sonnet")
+    timeout = getattr(args, "timeout", 600)
+    max_retries = getattr(args, "max_retries", 3)
+    observer_url = getattr(args, "observer_url", None)
 
-    # Resolve and display the effective working directory
-    effective_cwd = base_cwd if base_cwd else str(Path(args.file).resolve().parent)
-
-    print(Color.header("=" * 60))
-    print(Color.header(f"GRIND BATCH - {len(tasks)} tasks"))
-    print(Color.header("=" * 60))
-    print(Color.info(f"Working directory: {effective_cwd}"))
-    if getattr(args, 'interactive', False):
-        print(Color.info("Interactive mode: enabled"))
-
-    result = await run_batch(
-        tasks, args.verbose, getattr(args, 'stop_on_stuck', False), task_file=args.file
+    base_executor = functools.partial(
+        claude_executor, model=model, timeout_seconds=timeout
     )
-    print_batch_summary(result)
 
-    # Return semantic exit codes per documentation
-    # 0: Success, 1: Error, 2: Stuck, 3: Max iterations
-    if result.completed == result.total:
-        return 0
-    elif result.failed > 0:
-        return 1  # Error takes priority
-    elif result.max_iterations > 0:
-        return 3  # Max iterations
-    elif result.stuck > 0:
-        return 2  # Stuck
+    if contract_file:
+        cf = contract_file
+
+        async def executor(task: AgentTask, path: Path, attempt: int) -> None:
+            await base_executor(task, path, attempt)
+            if (path / cf).exists():
+                (path / "state" / "_contract_pass").write_text("ok", encoding="utf-8")
     else:
-        return 1  # Fallback to error
+        cmd = contract_cmd
 
+        async def executor(task: AgentTask, path: Path, attempt: int) -> None:
+            await base_executor(task, path, attempt)
+            proc = await asyncio.create_subprocess_shell(cmd, cwd=path)
+            await proc.wait()
+            if proc.returncode == 0:
+                (path / "state" / "_contract_pass").write_text("ok", encoding="utf-8")
 
-async def handle_decompose_command(args: argparse.Namespace) -> int:
-    """Handle the 'decompose' command - break down a problem into subtasks."""
-    print(Color.header("=" * 60))
-    print(Color.header("DECOMPOSE"))
-    print(Color.header("=" * 60))
-    print(Color.info(f"Analyzing: {args.problem}\n"))
-
-    tasks = await decompose(
-        args.problem, args.verify,
-        args.cwd if args.cwd != "." else None, args.verbose
+    contract = ExecutionContract(required_outputs=["_contract_pass"])
+    task = AgentTask(
+        task_id=task_id,
+        prompt=args.prompt,
+        contract=contract,
+        max_retries=max_retries,
     )
-    output = {
-        "tasks": [
-            {
-                "task": t.task,
-                "verify": t.verify,
-                "max_iterations": t.max_iterations,
-                "model": t.model,
-            }
-            for t in tasks
-        ]
-    }
-    yaml_out = yaml.dump(output, default_flow_style=False, sort_keys=False)
-    print(Color.success(f"\nFound {len(tasks)} subtasks:\n\n{yaml_out}"))
-    if args.output:
-        Path(args.output).write_text(yaml_out)
-        print(Color.success(f"Saved to {args.output}"))
-        print(Color.info(f"Run: uv run grind.py batch {args.output}"))
+    loop = SelfEvolutionLoop(repo_root=args.repo, observer_url=observer_url)
+
+    result = await loop.run(task, executor)
+
+    cr_status = result.contract_result.status.value if result.contract_result else "n/a"
+    print(f"\ntask_id:  {result.task_id}")
+    print(f"status:   {result.status}")
+    print(f"attempts: {result.attempts}")
+    print(f"contract: {cr_status}")
+
+    return 0 if result.status == "accepted" else 1
+
+
+async def handle_show_command(args: argparse.Namespace) -> int:
+    """Handle 'grind show <task_id>' — query observer DB and print events."""
+    db_path = Path(getattr(args, "db", None) or Path.home() / ".grind" / "observer.db")
+    if not db_path.exists():
+        print(f"Database not found: {db_path}")
+        return 1
+
+    conn = sqlite3.connect(str(db_path))
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(
+        "SELECT * FROM events WHERE session_id = ? ORDER BY timestamp",
+        (args.task_id,),
+    ).fetchall()
+    conn.close()
+
+    if not rows:
+        print(f"No events for task_id '{args.task_id}'")
+        return 1
+
+    for row in rows:
+        ts = datetime.fromtimestamp(row["timestamp"]).isoformat(timespec="seconds")
+        event_type = row["event_type"]
+        payload = json.loads(row["payload"] or "{}")
+        parts: list[str] = []
+        if row["tool_name"]:
+            parts.append(f"tool={row['tool_name']}")
+        if "attempt" in payload:
+            parts.append(f"attempt={payload['attempt']}")
+        if "status" in payload:
+            parts.append(f"status={payload['status']}")
+        extra = "  ".join(parts)
+        print(f"{ts}  {event_type:<25}  {extra}")
+
     return 0
 
 
@@ -150,7 +145,6 @@ async def handle_tmux_command(args: argparse.Namespace) -> int:
 
     session_name = args.session or "grind"
 
-    # If --list, show sessions and exit
     if getattr(args, 'list', False):
         sessions = list_sessions()
         if not sessions:
@@ -167,7 +161,6 @@ async def handle_tmux_command(args: argparse.Namespace) -> int:
     print(Color.header("GRIND TMUX"))
     print(Color.header("=" * 60))
 
-    # Install hooks if requested
     if not args.no_hooks:
         from grind.hooks_config import generate_hooks_config, install_hooks
 
@@ -235,144 +228,18 @@ async def handle_hooks_command(args: argparse.Namespace) -> int:
     return 1
 
 
-def _print_dag_dry_run(graph):
-    """Print the DAG execution plan without running tasks."""
-    order = graph.get_execution_order()
-    print(Color.header("=" * 60))
-    print(Color.bold("DAG Execution Plan"))
-    print(Color.header("=" * 60))
-    for i, task_id in enumerate(order, 1):
-        node = graph.nodes[task_id]
-        deps = node.depends_on
-        dep_str = f" (after: {', '.join(deps)})" if deps else ""
-        task_preview = node.task_def.task[:50]
-        if len(node.task_def.task) > 50:
-            task_preview += "..."
-        print(f"  {i}. {task_id}{dep_str}")
-        print(Color.dim(f"     {task_preview}"))
-    print(Color.header("=" * 60))
-    print(f"Total: {len(order)} tasks")
-
-
-def _print_dag_summary(result):
-    """Print the DAG execution summary."""
-    print(Color.header("\n" + "=" * 60))
-    print(Color.bold("DAG Execution Summary"))
-    print(Color.header("=" * 60))
-    print(f"  Total:     {result.total}")
-    print(Color.success(f"  Completed: {result.completed}"))
-    if result.stuck:
-        print(Color.warning(f"  Stuck:     {result.stuck}"))
-    if result.max_iterations:
-        print(Color.info(f"  Max Iter:  {result.max_iterations}"))
-    if result.failed:
-        print(Color.error(f"  Failed:    {result.failed}"))
-    if result.blocked:
-        print(Color.warning(f"  Blocked:   {result.blocked}"))
-    print(f"  Duration:  {result.duration_seconds:.1f}s")
-    print(Color.header("=" * 60))
-
-
-def _get_dag_exit_code(result) -> int:
-    """Determine the exit code for DAG execution result."""
-    if result.completed == result.total:
-        return 0
-    elif result.failed > 0 or result.blocked > 0:
-        return 1  # Error takes priority
-    elif result.max_iterations > 0:
-        return 3  # Max iterations
-    elif result.stuck > 0:
-        return 2  # Stuck
-    else:
-        return 1  # Fallback to error
-
-
-async def _cleanup_worktrees_if_requested(cleanup_requested: bool):
-    """Clean up worktrees if requested."""
-    if not cleanup_requested:
-        return
-
-    from grind.worktree import WorktreeManager
-    try:
-        manager = WorktreeManager()
-        count = await manager.cleanup_all(force=True)
-        if count:
-            print(Color.info(f"Cleaned up {count} stale worktrees"))
-    except Exception as e:
-        print(Color.warning(f"Could not cleanup worktrees: {e}"))
-
-
-def _warn_if_parallel_without_worktrees(parallel: int, worktrees: bool):
-    """Warn about parallel without worktrees."""
-    if parallel > 1 and not worktrees:
-        print(Color.warning(
-            "Warning: --parallel > 1 without --worktrees may cause Git conflicts"
-        ))
-        print(Color.warning(
-            "Consider: grind dag tasks.yaml --parallel 3 --worktrees"
-        ))
-
-
-async def handle_dag_command(args: argparse.Namespace) -> int:
-    """Handle the 'dag' command - execute tasks with dependency ordering."""
-    from grind.dag import DAGExecutor
-    from grind.tasks import build_task_graph
-
-    try:
-        graph = build_task_graph(args.tasks_file)
-    except ValueError as e:
-        print(Color.error(f"Invalid task graph: {e}"))
-        return 2  # Exit code for invalid graph
-
-    await _cleanup_worktrees_if_requested(args.cleanup_worktrees)
-    _warn_if_parallel_without_worktrees(args.parallel, args.worktrees)
-
-    if args.dry_run:
-        _print_dag_dry_run(graph)
-        return 0
-
-    def on_start(node):
-        print(Color.info(f"\n{'=' * 60}"))
-        print(Color.bold(f"Starting: {node.id}"))
-        print(Color.dim(f"Task: {node.task_def.task[:60]}..."))
-        print(Color.info(f"{'=' * 60}"))
-
-    def on_complete(node, result):
-        if result.status == GrindStatus.COMPLETE:
-            print(Color.success(
-                f"Completed: {node.id} ({result.iterations} iterations)"
-            ))
-        elif node.status == "blocked":
-            print(Color.warning(f"Blocked: {node.id}"))
-        else:
-            print(Color.error(f"Failed: {node.id} - {result.message}"))
-
-    executor = DAGExecutor(graph)
-    result = await executor.execute(
-        verbose=args.verbose,
-        max_parallel=args.parallel,
-        use_worktrees=args.worktrees,
-        on_task_start=on_start,
-        on_task_complete=on_complete,
-        task_file=args.tasks_file,
-    )
-
-    _print_dag_summary(result)
-    return _get_dag_exit_code(result)
+def _generate_task_id() -> str:
+    ts = datetime.now().strftime("%Y%m%d")
+    h = hashlib.md5(str(_time.time()).encode()).hexdigest()[:4]
+    return f"job-{ts}-{h}"
 
 
 async def main_async(args: argparse.Namespace) -> int:
-    if args.command == "run" or (args.command is None and args.task):
-        return await handle_run_command(args)
+    if args.command == "run":
+        return await handle_evolve_command(args)
 
-    elif args.command == "batch":
-        return await handle_batch_command(args)
-
-    elif args.command == "decompose":
-        return await handle_decompose_command(args)
-
-    elif args.command == "dag":
-        return await handle_dag_command(args)
+    elif args.command == "show":
+        return await handle_show_command(args)
 
     elif args.command == "observe":
         return await handle_observe_command(args)
@@ -383,11 +250,9 @@ async def main_async(args: argparse.Namespace) -> int:
     elif args.command == "hooks":
         return await handle_hooks_command(args)
 
-    print(Color.error("Usage: grind [run|batch|decompose|dag|observe|tmux|hooks] [options]"))
-    print(Color.dim("  grind run -t 'Fix tests' -v 'pytest' -m sonnet"))
-    print(Color.dim("  grind batch tasks.yaml"))
-    print(Color.dim("  grind decompose -p 'Fix failures' -v 'pytest' -o tasks.yaml"))
-    print(Color.dim("  grind dag tasks.yaml --parallel 3 --worktrees"))
+    print(Color.error("Usage: grind [run|show|observe|tmux|hooks] [options]"))
+    print(Color.dim("  grind run --repo /path --prompt 'Create hello.py' --contract-file hello.py"))
+    print(Color.dim("  grind show <task-id>"))
     print(Color.dim("  grind observe                              # Start observer server"))
     print(Color.dim("  grind tmux --session my-project --attach   # Launch in tmux"))
     print(Color.dim("  grind hooks install                        # Install observer hooks"))
@@ -395,64 +260,37 @@ async def main_async(args: argparse.Namespace) -> int:
 
 
 def main():
-    p = argparse.ArgumentParser(description="Grind Loop - Automated fix-verify loops")
+    p = argparse.ArgumentParser(description="Grind — self-evolution loop for Claude")
     sub = p.add_subparsers(dest="command")
 
-    run = sub.add_parser("run", help="Run single task")
-    run.add_argument("--task", "-t", required=True)
-    run.add_argument("--verify", "-v", required=True)
-    run.add_argument("--max-iter", "-n", type=int, default=10)
-    run.add_argument("--cwd", "-c", default=".")
-    run.add_argument("--model", "-m", default="haiku", choices=["sonnet", "opus", "haiku"],
-                     help="Model to use (default: haiku - faster/cheaper for most tasks)")
-    run.add_argument("--verbose", action="store_true")
-    run.add_argument("--quiet", "-q", action="store_true")
-    run.add_argument("--interactive", "-i", action="store_true",
-                     help="Enable interactive mode (press 'i' to interject)")
+    run = sub.add_parser("run", help="Run a self-evolution job")
+    run.add_argument("--repo", required=True, metavar="PATH",
+                     help="Absolute path to target repo")
+    run.add_argument("--prompt", required=True,
+                     help="Task prompt")
+    run.add_argument("--task-id", dest="task_id", default=None, metavar="SLUG",
+                     help="Task identifier slug (default: auto-generated)")
+    run.add_argument("--model", "-m", default="sonnet",
+                     choices=["sonnet", "opus", "haiku"],
+                     help="Model to use (default: sonnet)")
+    run.add_argument("--max-retries", dest="max_retries", type=int, default=3,
+                     metavar="N")
+    run.add_argument("--timeout", type=int, default=600,
+                     metavar="N", help="Per-attempt timeout in seconds (default: 600)")
+    run.add_argument("--observer-url", dest="observer_url", default=None,
+                     metavar="URL", help="Observer server URL (default: http://localhost:8421)")
+    run.add_argument("--contract-file", dest="contract_file", default=None,
+                     metavar="PATH",
+                     help="Contract: file must exist at PATH inside worktree after attempt")
+    run.add_argument("--contract-cmd", dest="contract_cmd", default=None,
+                     metavar="CMD",
+                     help="Contract: command must return 0 when run with cwd=worktree")
 
-    batch = sub.add_parser("batch", help="Run batch from file")
-    batch.add_argument("file")
-    batch.add_argument("--cwd", "-c", help="Working directory (default: tasks file's directory)")
-    batch.add_argument("--verbose", action="store_true")
-    batch.add_argument("--stop-on-stuck", action="store_true")
-    batch.add_argument("--interactive", "-i", action="store_true",
-                       help="Enable interactive mode (press 'i' to interject)")
+    show_parser = sub.add_parser("show", help="Show events for a task from the observer DB")
+    show_parser.add_argument("task_id", help="Task ID to look up")
+    show_parser.add_argument("--db", default=None, metavar="PATH",
+                             help="SQLite DB path (default: ~/.grind/observer.db)")
 
-    dec = sub.add_parser("decompose", help="Decompose problem into tasks")
-    dec.add_argument("--problem", "-p", required=True)
-    dec.add_argument("--verify", "-v", required=True)
-    dec.add_argument("--output", "-o")
-    dec.add_argument("--cwd", "-c", default=".")
-    dec.add_argument("--verbose", action="store_true")
-
-    # DAG execution with dependencies
-    dag_parser = sub.add_parser(
-        "dag",
-        help="Run tasks with dependency ordering"
-    )
-    dag_parser.add_argument("tasks_file", help="Path to tasks YAML/JSON file")
-    dag_parser.add_argument(
-        "-v", "--verbose", action="store_true",
-        help="Show detailed output"
-    )
-    dag_parser.add_argument(
-        "--dry-run", action="store_true",
-        help="Show execution plan without running tasks"
-    )
-    dag_parser.add_argument(
-        "--parallel", "-p", type=int, default=1, metavar="N",
-        help="Max parallel tasks (default: 1 = sequential)"
-    )
-    dag_parser.add_argument(
-        "--worktrees", "-w", action="store_true",
-        help="Use git worktrees for isolation (recommended with --parallel)"
-    )
-    dag_parser.add_argument(
-        "--cleanup-worktrees", action="store_true",
-        help="Remove all .worktrees/ before starting"
-    )
-
-    # Observer server
     observe_parser = sub.add_parser(
         "observe",
         help="Start the observability server (receives hook events)"
@@ -470,7 +308,6 @@ def main():
         help="SQLite database path (default: ~/.grind/observer.db)"
     )
 
-    # Tmux session launcher
     tmux_parser = sub.add_parser(
         "tmux",
         help="Launch Claude Code in a tmux session with observability"
@@ -513,7 +350,6 @@ def main():
         help="List existing tmux sessions"
     )
 
-    # Hooks management
     hooks_parser = sub.add_parser(
         "hooks",
         help="Manage Claude Code observer hooks"
@@ -526,15 +362,6 @@ def main():
     hooks_install.add_argument("--project-dir", default=None)
     hooks_uninstall = hooks_sub.add_parser("uninstall", help="Remove observer hooks")
     hooks_uninstall.add_argument("--project-dir", default=None)
-
-    p.add_argument("--task", "-t")
-    p.add_argument("--verify", "-v")
-    p.add_argument("--max-iter", "-n", type=int, default=10)
-    p.add_argument("--cwd", "-c", default=".")
-    p.add_argument("--model", "-m", default="haiku", choices=["sonnet", "opus", "haiku"],
-                   help="Model to use (default: haiku - faster/cheaper for most tasks)")
-    p.add_argument("--verbose", action="store_true")
-    p.add_argument("--quiet", "-q", action="store_true")
 
     args = p.parse_args()
     try:

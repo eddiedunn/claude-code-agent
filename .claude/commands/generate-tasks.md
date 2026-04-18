@@ -1,69 +1,70 @@
 # /generate-tasks
 
-Analyze the conversation context and generate a structured tasks.yaml file for Grind Loop execution.
+Analyze the conversation context and generate ready-to-run `grind run` commands for each job discussed.
 
 ## What it does
 
-1. Analyzes what you've been discussing with Claude
-2. Breaks down the work into concrete, actionable tasks
-3. Assigns appropriate models (haiku/sonnet/opus) based on complexity
-4. Sets reasonable iteration limits for each task
-5. Suggests task dependencies for DAG execution
-6. Generates a `tasks.yaml` file ready to use
+1. Reads the conversation to understand what work needs to be done
+2. Breaks it into concrete, independently executable jobs
+3. For each job, produces a `grind run` command with:
+   - `--repo` set to the repo discussed (ask if not clear)
+   - `--prompt` describing exactly what Claude should do
+   - `--contract-file` OR `--contract-cmd` as the success gate
+   - `--model` chosen by complexity (haiku for simple, sonnet for most, opus for hard reasoning)
+   - `--max-retries` sized to task risk
 
 ## Usage
 
-Just type `/generate-tasks` after discussing problems or goals with Claude.
+Type `/generate-tasks` after discussing problems or goals.
 
-Example conversation:
+Example:
 ```
-You: I have a Python project with 47 failing tests and several linting errors.
-     The tests are in tests/ and code is in src/. I want to fix everything.
+You: The auth tests are failing — pytest reports 12 errors in tests/auth/.
+     I also want a hello.py file created in the repo root.
 
 You: /generate-tasks
 ```
 
-Claude will:
-- Analyze your discussion
-- Create `tasks.yaml` with tasks organized by complexity
-- Ask clarifying questions if needed
-- Show you the generated file
-
-Once you have `tasks.yaml`, it's ready to use!
-
-## Generated task file format
-
-The generated `tasks.yaml` will look like:
-
-```yaml
-tasks:
-  - id: "fix-unit-tests"
-    task: "Fix failing unit tests in tests/auth/"
-    verify: "pytest tests/auth/ -v"
-    model: sonnet
-    max_iterations: 10
-    depends_on: ["lint-fixes"]  # Optional: for DAG mode
-
-  - id: "lint-fixes"
-    task: "Fix linting errors with ruff"
-    verify: "ruff check src/"
-    model: haiku
-    max_iterations: 5
-```
-
-## Using the generated tasks.yaml
-
-You can run it with any of these commands:
+Claude will emit:
 
 ```bash
-# Spawn agents in TUI with live monitoring
-uv run grind spawn -t tasks.yaml
+# Job 1 — fix auth tests
+uv run grind.py run \
+  --repo /path/to/repo \
+  --prompt "Fix the 12 failing tests in tests/auth/. Run pytest tests/auth/ to see errors." \
+  --contract-cmd "pytest tests/auth/ -q --tb=no" \
+  --model sonnet \
+  --max-retries 3
 
-# Run sequentially (one task at a time)
-uv run grind batch tasks.yaml
-
-# Run in parallel with dependencies respected
-uv run grind dag tasks.yaml --parallel 3
+# Job 2 — create hello.py
+uv run grind.py run \
+  --repo /path/to/repo \
+  --prompt "Create a file named hello.py in the repo root containing: print('hello')" \
+  --contract-file hello.py \
+  --model haiku \
+  --max-retries 2
 ```
 
-The file is fully editable - tweak the models, iterations, or task descriptions as needed!
+## Contract choice guide
+
+| Situation | Flag to use |
+|---|---|
+| Claude must create/modify a specific file | `--contract-file <relative-path>` |
+| Claude must make a test suite pass | `--contract-cmd "pytest <path> -q --tb=no"` |
+| Claude must make a lint check pass | `--contract-cmd "ruff check src/"` |
+| Claude must make a build succeed | `--contract-cmd "make build"` |
+
+## Running a job
+
+```bash
+# Terminal 1 (optional — live event stream)
+uv run grind.py observe
+
+# Terminal 2
+uv run grind.py run --repo /path --prompt "..." --contract-cmd "..."
+
+# Inspect events after the job
+uv run grind.py show <task-id-printed-above>
+```
+
+Exit 0 = contract fulfilled (accepted). Exit 1 = all retries exhausted (failed).
