@@ -360,8 +360,8 @@ def main():
     run.add_argument("--verify", "-v", required=True)
     run.add_argument("--max-iter", "-n", type=int, default=10)
     run.add_argument("--cwd", "-c", default=".")
-    run.add_argument("--model", "-m", default="haiku", choices=["sonnet", "opus", "haiku"],
-                     help="Model to use (default: haiku - faster/cheaper for most tasks)")
+    run.add_argument("--model", "-m", default="haiku",
+                     help="Model to use: bare (sonnet/opus/haiku) or prefixed (claude/sonnet, openrouter/openai/gpt-4o). Default: haiku")
     run.add_argument("--verbose", action="store_true")
     run.add_argument("--quiet", "-q", action="store_true")
     run.add_argument("--interactive", "-i", action="store_true",
@@ -420,8 +420,7 @@ def main():
     )
     tui_parser.add_argument(
         "--model", "-m", default="haiku",
-        choices=["sonnet", "opus", "haiku"],
-        help="Default model for new agents (default: haiku - faster/cheaper for most tasks)"
+        help="Default model for new agents: bare or provider-prefixed (default: haiku)"
     )
     tui_parser.add_argument(
         "--verbose", "-v", action="store_true",
@@ -439,8 +438,7 @@ def main():
     )
     spawn_parser.add_argument(
         "--model", "-m", default="haiku",
-        choices=["sonnet", "opus", "haiku"],
-        help="Default model for new agents (default: haiku)"
+        help="Default model for new agents: bare or provider-prefixed (default: haiku)"
     )
     spawn_parser.add_argument(
         "--verbose", "-v", action="store_true",
@@ -485,8 +483,8 @@ def main():
     p.add_argument("--verify", "-v")
     p.add_argument("--max-iter", "-n", type=int, default=10)
     p.add_argument("--cwd", "-c", default=".")
-    p.add_argument("--model", "-m", default="haiku", choices=["sonnet", "opus", "haiku"],
-                   help="Model to use (default: haiku - faster/cheaper for most tasks)")
+    p.add_argument("--model", "-m", default="haiku",
+                   help="Model to use: bare or provider-prefixed (default: haiku). Validation handled downstream.")
     p.add_argument("--verbose", action="store_true")
     p.add_argument("--quiet", "-q", action="store_true")
 
