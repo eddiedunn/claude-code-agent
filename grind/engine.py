@@ -5,6 +5,7 @@ import shlex
 import subprocess
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import Callable
 
 from claude_agent_sdk import (
@@ -18,6 +19,7 @@ from claude_agent_sdk import (
     ToolUseBlock,
 )
 
+from grind.contract import ContractStatus, validate as validate_contract
 from grind.hooks import execute_hooks
 from grind.interactive import (
     clear_interject,
@@ -325,6 +327,33 @@ async def _handle_complete_signal(
         all_hooks_executed.extend(hook_results)
 
     duration = (datetime.now() - start_time).total_seconds()
+
+    # Evaluate execution contract if one is attached to this task.
+    # Tasks without a contract pass through unchanged (existing behaviour).
+    if task_def.contract is not None:
+        worktree_path = Path(task_def.cwd) if task_def.cwd else Path.cwd()
+        contract_result = validate_contract(
+            contract=task_def.contract,
+            worktree_path=worktree_path,
+            actual_tool_calls=len(all_tools),
+            actual_wall_time_s=duration,
+        )
+        if contract_result.status != ContractStatus.FULFILLED:
+            violation_msg = "; ".join(contract_result.violations) or contract_result.status.value
+            _log(verbose, f"Contract {contract_result.status.value}: {violation_msg}", "error")
+            print(Color.error(f"\nContract {contract_result.status.value}: {violation_msg}"))
+            log_result("CONTRACT_VIOLATION", iteration, violation_msg, list(set(all_tools)), duration)
+            return GrindResult(
+                GrindStatus.STUCK,
+                iteration,
+                f"Contract {contract_result.status.value}: {violation_msg}",
+                list(set(all_tools)),
+                duration,
+                all_hooks_executed,
+                task_def.model,
+            )
+        _log(verbose, "Contract fulfilled", "success")
+
     _log(verbose, f">>> RETURNING COMPLETE after {iteration} iterations", "success")
     log_result("COMPLETE", iteration, message, list(set(all_tools)), duration)
     return GrindResult(

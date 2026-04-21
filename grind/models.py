@@ -1,6 +1,11 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
+
+if TYPE_CHECKING:
+    from grind.contract import ExecutionContract
 
 _VALID_BARE_MODELS = ("sonnet", "opus", "haiku")
 _VALID_PROVIDER_PREFIXES = ("claude/",)
@@ -135,6 +140,7 @@ class TaskDefinition:
     enable_interleaved_thinking: bool = True
     spec: str = ""
     parallel_safe: bool = False
+    contract: ExecutionContract | None = None
 
     @property
     def resolved_model(self) -> str:
