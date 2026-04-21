@@ -925,7 +925,7 @@ async def grind(
         permission_mode=task_def.permission_mode,
         cwd=task_def.cwd,
         max_turns=task_def.max_turns,
-        model=task_def.model,
+        model=task_def.resolved_model,
         env=_get_git_author_env(),
     )
 
