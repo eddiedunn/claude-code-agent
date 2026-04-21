@@ -288,6 +288,38 @@ async def handle_dag_command(args: argparse.Namespace) -> int:
     return _get_dag_exit_code(result)
 
 
+async def handle_compare_command(args: argparse.Namespace) -> int:
+    """Handle the 'compare' command - run same task against multiple models in parallel."""
+    from grind.compare import CompareSession, print_compare_summary, run_compare
+
+    print(Color.header("=" * 60))
+    print(Color.header("GRIND COMPARE"))
+    print(Color.header("=" * 60))
+    print(Color.info(f"Task:    {args.task}"))
+    print(Color.info(f"Verify:  {args.verify}"))
+    print(Color.info(f"Models:  {', '.join(args.models)}"))
+    if args.timeout:
+        print(Color.info(f"Timeout: {args.timeout}s per model"))
+    print(Color.header("=" * 60))
+
+    session = CompareSession(
+        task=args.task,
+        verify=args.verify,
+        models=args.models,
+        max_iterations=args.max_iter,
+        timeout=args.timeout,
+        branch_prefix=args.branch_prefix,
+        verbose=args.verbose,
+    )
+
+    results = await run_compare(session)
+    print_compare_summary(results)
+
+    # Exit 0 if all succeeded, 1 if any failed
+    all_ok = all(r.ok for r in results)
+    return 0 if all_ok else 1
+
+
 async def main_async(args: argparse.Namespace) -> int:
     if args.command == "run" or (args.command is None and args.task):
         return await handle_run_command(args)
@@ -307,11 +339,15 @@ async def main_async(args: argparse.Namespace) -> int:
     elif args.command == "spawn":
         return await handle_spawn_command(args)
 
-    print(Color.error("Usage: grind.py [run|batch|decompose|tui|dag|spawn] [options]"))
+    elif args.command == "compare":
+        return await handle_compare_command(args)
+
+    print(Color.error("Usage: grind.py [run|batch|decompose|tui|dag|spawn|compare] [options]"))
     print(Color.dim("  grind.py run -t 'Fix tests' -v 'pytest' -m sonnet"))
     print(Color.dim("  grind.py batch tasks.yaml"))
     print(Color.dim("  grind.py decompose -p 'Fix failures' -v 'pytest' -o tasks.yaml"))
     print(Color.dim("  grind.py spawn -t tasks.yaml"))
+    print(Color.dim("  grind.py compare --task '...' --verify 'pytest' --models claude/sonnet claude/opus"))
     return 1
 
 
@@ -409,6 +445,40 @@ def main():
     spawn_parser.add_argument(
         "--verbose", "-v", action="store_true",
         help="Enable verbose logging"
+    )
+
+    # Compare: same task against multiple models in parallel worktrees
+    compare_parser = sub.add_parser(
+        "compare",
+        help="Run the same task against multiple models in parallel worktrees",
+    )
+    compare_parser.add_argument(
+        "--task", "-t", required=True,
+        help="Task description to run against every model",
+    )
+    compare_parser.add_argument(
+        "--verify", "-v", required=True,
+        help="Verification command (must exit 0 for success)",
+    )
+    compare_parser.add_argument(
+        "--models", "-m", nargs="+", required=True, metavar="MODEL",
+        help="One or more model IDs, e.g. claude/sonnet openrouter/openai/gpt-4o",
+    )
+    compare_parser.add_argument(
+        "--max-iter", "-n", type=int, default=10,
+        help="Max iterations per model (default: 10)",
+    )
+    compare_parser.add_argument(
+        "--timeout", type=float, default=None,
+        help="Per-model wall-clock timeout in seconds (default: none)",
+    )
+    compare_parser.add_argument(
+        "--branch-prefix", default="compare/",
+        help="Git branch prefix for compare worktrees (default: compare/)",
+    )
+    compare_parser.add_argument(
+        "--verbose", action="store_true",
+        help="Show detailed agent output",
     )
 
     p.add_argument("--task", "-t")
