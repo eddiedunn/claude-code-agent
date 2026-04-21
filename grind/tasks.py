@@ -46,6 +46,8 @@ def parse_task_from_yaml(yaml_data: dict[str, Any]) -> TaskDefinition:
         allowed_tools=yaml_data.get("allowed_tools"),
         permission_mode=yaml_data.get("permission_mode", "acceptEdits"),
         max_turns=yaml_data.get("max_turns", DEFAULT_MAX_TURNS),
+        spec=yaml_data.get("spec", ""),
+        parallel_safe=yaml_data.get("parallel_safe", False),
     )
 
     errors = task_def.validate()
@@ -150,21 +152,31 @@ def build_task_graph(path: str, base_cwd: str | None = None) -> TaskGraph:
         # Get dependencies
         depends_on = t.get("depends_on", [])
 
-        # Parse worktree config (supports two formats)
         worktree_config = None
-        worktree_data = t.get("worktree", {})
+        worktree_raw = t.get("worktree")
 
-        # Shorthand: branch at top level, or full worktree block
-        branch = t.get("branch") or worktree_data.get("branch")
-
-        if branch:
-            worktree_config = WorktreeConfig(
-                branch=branch,
-                base_branch=worktree_data.get("base_branch", "HEAD"),
-                merge_from=t.get("merge_from", worktree_data.get("merge_from", [])),
-                cleanup_on_success=worktree_data.get("cleanup_on_success", True),
-                cleanup_on_failure=worktree_data.get("cleanup_on_failure", False),
-            )
+        if worktree_raw is True:
+            worktree_config = WorktreeConfig()
+        elif worktree_raw is False or worktree_raw is None:
+            worktree_data = {}
+            branch = t.get("branch")
+            if branch:
+                worktree_config = WorktreeConfig(
+                    branch=branch,
+                    base_branch="HEAD",
+                    merge_from=t.get("merge_from", []),
+                )
+        else:
+            worktree_data = worktree_raw if isinstance(worktree_raw, dict) else {}
+            branch = t.get("branch") or worktree_data.get("branch")
+            if branch:
+                worktree_config = WorktreeConfig(
+                    branch=branch,
+                    base_branch=worktree_data.get("base_branch", "HEAD"),
+                    merge_from=t.get("merge_from", worktree_data.get("merge_from", [])),
+                    cleanup_on_success=worktree_data.get("cleanup_on_success", True),
+                    cleanup_on_failure=worktree_data.get("cleanup_on_failure", False),
+                )
 
         # Create node
         node = TaskNode(

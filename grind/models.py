@@ -2,6 +2,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Literal
 
+_VALID_BARE_MODELS = ("sonnet", "opus", "haiku")
+_VALID_PROVIDER_PREFIXES = ("claude/",)
+
 
 class HookTrigger(Enum):
     EVERY = "every"
@@ -120,7 +123,7 @@ class TaskDefinition:
     verify: str
     max_iterations: int = 10
     cwd: str | None = None
-    model: Literal["sonnet", "opus", "haiku"] = "haiku"
+    model: str = "haiku"
     depends_on: list[str] = field(default_factory=list)
     hooks: GrindHooks = field(default_factory=GrindHooks)
     prompt_config: PromptConfig = field(default_factory=PromptConfig)
@@ -130,6 +133,16 @@ class TaskDefinition:
     interactive: InteractiveConfig = field(default_factory=InteractiveConfig)
     query_timeout: int = 300  # Timeout in seconds for SDK query operations
     enable_interleaved_thinking: bool = True
+    spec: str = ""
+    parallel_safe: bool = False
+
+    @property
+    def resolved_model(self) -> str:
+        """Return bare model name, stripping any provider prefix (e.g. claude/)."""
+        for prefix in _VALID_PROVIDER_PREFIXES:
+            if self.model.startswith(prefix):
+                return self.model[len(prefix):]
+        return self.model
 
     def validate(self) -> list[str]:
         """Validate task definition, return list of error messages."""
@@ -138,7 +151,7 @@ class TaskDefinition:
             errors.append("Task description cannot be empty")
         if not self.verify or not self.verify.strip():
             errors.append("Verify command cannot be empty")
-        if self.model not in ("sonnet", "opus", "haiku"):
+        if self.resolved_model not in _VALID_BARE_MODELS:
             errors.append(f"Invalid model: {self.model}")
         if self.max_iterations < 1:
             errors.append(f"max_iterations must be >= 1, got {self.max_iterations}")
@@ -169,7 +182,7 @@ class WorktreeConfig:
 
     See docs/dag-execution-design.md for usage details.
     """
-    branch: str  # Branch name for this task (e.g., "fix/lint")
+    branch: str = ""  # Branch name for this task (e.g., "fix/lint")
     base_branch: str = "HEAD"  # Create branch from this ref
     merge_from: list[str] = field(default_factory=list)  # Branches to merge
     cleanup_on_success: bool = True  # Remove worktree after success
