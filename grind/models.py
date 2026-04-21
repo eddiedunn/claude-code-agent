@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from grind.contract import ExecutionContract
 
 _VALID_BARE_MODELS = ("sonnet", "opus", "haiku")
-_VALID_PROVIDER_PREFIXES = ("claude/",)
+_VALID_PROVIDER_PREFIXES = ("claude/", "openrouter/")
 
 
 class HookTrigger(Enum):
@@ -143,6 +143,14 @@ class TaskDefinition:
     contract: ExecutionContract | None = None
 
     @property
+    def provider(self) -> str:
+        """Return the provider prefix for this model (e.g. 'claude', 'openrouter')."""
+        for prefix in _VALID_PROVIDER_PREFIXES:
+            if self.model.startswith(prefix):
+                return prefix.rstrip("/")
+        return "claude"
+
+    @property
     def resolved_model(self) -> str:
         """Return bare model name, stripping any provider prefix (e.g. claude/)."""
         for prefix in _VALID_PROVIDER_PREFIXES:
@@ -157,8 +165,15 @@ class TaskDefinition:
             errors.append("Task description cannot be empty")
         if not self.verify or not self.verify.strip():
             errors.append("Verify command cannot be empty")
-        if self.resolved_model not in _VALID_BARE_MODELS:
-            errors.append(f"Invalid model: {self.model}")
+        # Model validation: Claude models must be one of the known bare names;
+        # openrouter models are free-form (e.g. "openai/gpt-4o") so we only
+        # validate that they are non-empty.
+        if self.provider == "claude":
+            if self.resolved_model not in _VALID_BARE_MODELS:
+                errors.append(f"Invalid model: {self.model}")
+        else:
+            if not self.resolved_model:
+                errors.append(f"Invalid model: {self.model}")
         if self.max_iterations < 1:
             errors.append(f"max_iterations must be >= 1, got {self.max_iterations}")
         if self.max_turns < 1:

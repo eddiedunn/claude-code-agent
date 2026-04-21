@@ -818,12 +818,101 @@ async def _handle_checkpoint_actions(
             return None  # Continue to next iteration
 
 
+async def _grind_via_provider(
+    task_def: TaskDefinition,
+    verbose: bool = False,
+) -> GrindResult:
+    """Run a task through the Provider abstraction for non-Claude providers.
+
+    Collects all Events emitted by the provider and translates the terminal
+    event back to a GrindResult so callers see no difference.
+    """
+    from grind.prompts import build_prompt
+    from grind.providers import EventKind, RunConfig, resolve_provider
+
+    provider = resolve_provider(task_def.model)
+    config = RunConfig(
+        model=task_def.resolved_model,
+        max_iterations=task_def.max_iterations,
+        max_turns=task_def.max_turns,
+        cwd=task_def.cwd,
+        allowed_tools=task_def.allowed_tools,
+        permission_mode=task_def.permission_mode,
+        query_timeout=task_def.query_timeout,
+        verbose=verbose,
+    )
+
+    prompt = build_prompt(task_def.prompt_config, task_def.task, task_def.verify)
+    tools = task_def.allowed_tools or DEFAULT_ALLOWED_TOOLS
+
+    start_time = datetime.now()
+    setup_logger(task_def.task)
+    log_task_start(
+        task_def.task,
+        task_def.verify,
+        task_def.model,
+        task_def.max_iterations,
+        task_def.cwd,
+        task_def.allowed_tools,
+        task_def.permission_mode,
+    )
+
+    terminal_event = None
+    async for event in provider.run(prompt, tools, config):
+        if event.kind in (EventKind.COMPLETE, EventKind.STUCK, EventKind.ERROR):
+            terminal_event = event
+            break
+
+    duration = (datetime.now() - start_time).total_seconds()
+
+    if terminal_event is None or terminal_event.kind == EventKind.ERROR:
+        msg = terminal_event.message if terminal_event else "Provider yielded no terminal event"
+        return GrindResult(
+            GrindStatus.ERROR,
+            0,
+            msg,
+            [],
+            duration,
+            [],
+            task_def.model,
+        )
+
+    if terminal_event.kind == EventKind.COMPLETE:
+        return GrindResult(
+            GrindStatus.COMPLETE,
+            0,
+            terminal_event.message,
+            [],
+            duration,
+            [],
+            task_def.model,
+        )
+
+    # STUCK
+    return GrindResult(
+        GrindStatus.STUCK,
+        0,
+        terminal_event.message,
+        [],
+        duration,
+        [],
+        task_def.model,
+    )
+
+
 async def grind(
     task_def: TaskDefinition,
     verbose: bool = False,
     on_iteration: Callable[[int, str], None] | None = None,
     event_bus: EventBus | None = None,
 ) -> GrindResult:
+    # ---------------------------------------------------------------------------
+    # Provider routing — non-Claude providers are dispatched here.
+    # The Claude path falls through to the existing SDK loop below.
+    # ---------------------------------------------------------------------------
+    if task_def.provider != "claude":
+        return await _grind_via_provider(task_def, verbose)
+
     # NOTE: task_def.enable_interleaved_thinking is currently not used
     # The Claude Agent SDK does not yet support the anthropic-beta header for interleaved thinking
     # This field is kept for backward compatibility and may be enabled in a future SDK version
