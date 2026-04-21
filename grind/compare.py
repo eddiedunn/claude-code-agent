@@ -16,6 +16,7 @@ After all runs complete, a plain-text summary table is printed:
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
 import time
 from dataclasses import dataclass, field
@@ -24,6 +25,8 @@ from grind.engine import grind
 from grind.models import GrindResult, GrindStatus, TaskDefinition, WorktreeConfig
 from grind.utils import Color
 from grind.worktree import WorktreeManager
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -96,6 +99,34 @@ def _task_id(slug: str, model_id: str) -> str:
     return f"{slug}-{_sanitize_model(model_id)}"
 
 
+async def _cleanup_worktree_and_branch(
+    manager: WorktreeManager,
+    task_id: str,
+    branch: str,
+) -> None:
+    """Best-effort cleanup: remove worktree, prune stale refs, delete branch.
+
+    All steps are swallowed — cleanup must never raise into the caller.
+    """
+    # 1. Remove the worktree directory (force so uncommitted changes don't block).
+    try:
+        await manager.cleanup(task_id, force=True)
+    except Exception as exc:
+        logger.debug("worktree cleanup failed for %s: %s", task_id, exc)
+
+    # 2. Prune any stale worktree administrative files.
+    try:
+        await manager._run_git("worktree", "prune")
+    except Exception as exc:
+        logger.debug("worktree prune failed: %s", exc)
+
+    # 3. Force-delete the branch (may be unmerged if run errored early).
+    try:
+        await manager._run_git("branch", "-D", branch)
+    except Exception as exc:
+        logger.debug("branch delete failed for %s: %s", branch, exc)
+
+
 # ---------------------------------------------------------------------------
 # Per-model runner
 # ---------------------------------------------------------------------------
@@ -109,6 +140,13 @@ async def _run_one(
     branch = _branch_name(session.branch_prefix, session.slug, model)
     task_id = _task_id(session.slug, model)
     result = CompareResult(model=model)
+
+    # Cleanup policy: always clean up failures so stale branches don't block retries.
+    worktree_cfg = WorktreeConfig(
+        branch=branch,
+        cleanup_on_success=True,
+        cleanup_on_failure=True,
+    )
 
     # --- create worktree ---
     try:
@@ -128,38 +166,34 @@ async def _run_one(
 
     t0 = time.monotonic()
     try:
-        coro = grind(task_def, verbose=session.verbose)
-        if session.timeout:
-            async with asyncio.timeout(session.timeout):
-                grind_result: GrindResult = await coro
-        else:
-            grind_result = await coro
-        result.status = grind_result.status
-        result.iterations = grind_result.iterations
-        result.wall_time_s = grind_result.duration_seconds or (time.monotonic() - t0)
-    except asyncio.TimeoutError:
-        result.status = None          # sentinel: timed out
-        result.wall_time_s = time.monotonic() - t0
-        result.error = f"Timed out after {session.timeout}s"
-    except Exception as exc:
-        result.status = GrindStatus.ERROR
-        result.wall_time_s = time.monotonic() - t0
-        result.error = str(exc)
-
-    # --- cleanup worktree ---
-    success = result.status == GrindStatus.COMPLETE
-    worktree_cfg = WorktreeConfig(
-        branch=branch,
-        cleanup_on_success=True,
-        cleanup_on_failure=False,
-    )
-    should_cleanup = success and worktree_cfg.cleanup_on_success or \
-                     (not success and worktree_cfg.cleanup_on_failure)
-    if should_cleanup:
         try:
-            await worktree_manager.cleanup(task_id)
-        except Exception:
-            pass  # non-fatal
+            coro = grind(task_def, verbose=session.verbose)
+            if session.timeout:
+                async with asyncio.timeout(session.timeout):
+                    grind_result: GrindResult = await coro
+            else:
+                grind_result = await coro
+            result.status = grind_result.status
+            result.iterations = grind_result.iterations
+            result.wall_time_s = grind_result.duration_seconds or (time.monotonic() - t0)
+        except asyncio.TimeoutError:
+            result.status = None          # sentinel: timed out
+            result.wall_time_s = time.monotonic() - t0
+            result.error = f"Timed out after {session.timeout}s"
+        except Exception as exc:
+            result.status = GrindStatus.ERROR
+            result.wall_time_s = time.monotonic() - t0
+            result.error = str(exc)
+    finally:
+        # Always clean up according to policy — runs even if an unexpected exception
+        # escapes the inner try/except above.
+        success = result.status == GrindStatus.COMPLETE
+        should_cleanup = (
+            (success and worktree_cfg.cleanup_on_success)
+            or (not success and worktree_cfg.cleanup_on_failure)
+        )
+        if should_cleanup:
+            await _cleanup_worktree_and_branch(worktree_manager, task_id, branch)
 
     return result
 
