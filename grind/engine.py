@@ -821,11 +821,16 @@ async def _handle_checkpoint_actions(
 async def _grind_via_provider(
     task_def: TaskDefinition,
     verbose: bool = False,
+    on_iteration: Callable[[int, str], None] | None = None,
+    event_bus: EventBus | None = None,
 ) -> GrindResult:
     """Run a task through the Provider abstraction for non-Claude providers.
 
     Collects all Events emitted by the provider and translates the terminal
     event back to a GrindResult so callers see no difference.
+
+    NOTE: pre_grind/post_grind hooks are not executed in this path — those
+    hooks drive the Claude SDK client and require refactoring that is out of scope.
     """
     from grind.prompts import build_prompt
     from grind.providers import EventKind, RunConfig, resolve_provider
@@ -857,43 +862,121 @@ async def _grind_via_provider(
         task_def.permission_mode,
     )
 
+    iteration = 0
+    all_tools: set[str] = set()
     terminal_event = None
+
     async for event in provider.run(prompt, tools, config):
-        if event.kind in (EventKind.COMPLETE, EventKind.STUCK, EventKind.ERROR):
+        if event.kind == EventKind.ITERATION:
+            iteration += 1
+            if on_iteration:
+                on_iteration(iteration, "running")
+            if event_bus:
+                await event_bus.publish(AgentEvent(
+                    event_type=EventType.ITERATION_STARTED,
+                    agent_id="grind",
+                    data={"iteration": iteration, "max_iterations": task_def.max_iterations},
+                    timestamp=time.time(),
+                ))
+
+        elif event.kind == EventKind.TEXT:
+            if event_bus:
+                await event_bus.publish(AgentEvent(
+                    event_type=EventType.ITERATION_COMPLETED,
+                    agent_id="grind",
+                    data={"iteration": iteration, "text": event.text},
+                    timestamp=time.time(),
+                ))
+
+        elif event.kind == EventKind.TOOL_USE:
+            all_tools.add(event.tool_name)
+            if event_bus:
+                await event_bus.publish(AgentEvent(
+                    event_type=EventType.ITERATION_COMPLETED,
+                    agent_id="grind",
+                    data={"iteration": iteration, "tool_name": event.tool_name, "tools_used": list(all_tools)},
+                    timestamp=time.time(),
+                ))
+
+        elif event.kind in (EventKind.COMPLETE, EventKind.STUCK, EventKind.ERROR):
             terminal_event = event
+            # Emit final agent event
+            if event_bus:
+                if event.kind == EventKind.COMPLETE:
+                    final_event_type = EventType.AGENT_COMPLETED
+                elif event.kind == EventKind.ERROR:
+                    final_event_type = EventType.AGENT_FAILED
+                else:  # STUCK
+                    final_event_type = EventType.AGENT_FAILED
+                await event_bus.publish(AgentEvent(
+                    event_type=final_event_type,
+                    agent_id="grind",
+                    data={"message": event.message, "tools_used": list(all_tools)},
+                    timestamp=time.time(),
+                ))
             break
 
     duration = (datetime.now() - start_time).total_seconds()
+    tools_used = list(set(all_tools))
 
     if terminal_event is None or terminal_event.kind == EventKind.ERROR:
         msg = terminal_event.message if terminal_event else "Provider yielded no terminal event"
+        log_result("ERROR", iteration, msg, tools_used, duration)
         return GrindResult(
             GrindStatus.ERROR,
-            0,
+            iteration,
             msg,
-            [],
+            tools_used,
             duration,
             [],
             task_def.model,
         )
 
     if terminal_event.kind == EventKind.COMPLETE:
+        # Evaluate execution contract if one is attached to this task.
+        # Tasks without a contract pass through unchanged (existing behaviour).
+        if task_def.contract is not None:
+            worktree_path = Path(task_def.cwd) if task_def.cwd else Path.cwd()
+            contract_result = validate_contract(
+                contract=task_def.contract,
+                worktree_path=worktree_path,
+                actual_tool_calls=len(all_tools),
+                actual_wall_time_s=duration,
+            )
+            if contract_result.status != ContractStatus.FULFILLED:
+                violation_msg = "; ".join(contract_result.violations) or contract_result.status.value
+                _log(verbose, f"Contract {contract_result.status.value}: {violation_msg}", "error")
+                print(Color.error(f"\nContract {contract_result.status.value}: {violation_msg}"))
+                log_result("CONTRACT_VIOLATION", iteration, violation_msg, tools_used, duration)
+                return GrindResult(
+                    GrindStatus.STUCK,
+                    iteration,
+                    f"Contract {contract_result.status.value}: {violation_msg}",
+                    tools_used,
+                    duration,
+                    [],
+                    task_def.model,
+                )
+            _log(verbose, "Contract fulfilled", "success")
+
+        log_result("COMPLETE", iteration, terminal_event.message, tools_used, duration)
         return GrindResult(
             GrindStatus.COMPLETE,
-            0,
+            iteration,
             terminal_event.message,
-            [],
+            tools_used,
             duration,
             [],
             task_def.model,
         )
 
     # STUCK
+    log_result("STUCK", iteration, terminal_event.message, tools_used, duration)
     return GrindResult(
         GrindStatus.STUCK,
-        0,
+        iteration,
         terminal_event.message,
-        [],
+        tools_used,
         duration,
         [],
         task_def.model,
@@ -911,7 +994,7 @@ async def grind(
     # The Claude path falls through to the existing SDK loop below.
     # ---------------------------------------------------------------------------
     if task_def.provider != "claude":
-        return await _grind_via_provider(task_def, verbose)
+        return await _grind_via_provider(task_def, verbose, on_iteration, event_bus)
 
     # NOTE: task_def.enable_interleaved_thinking is currently not used
     # The Claude Agent SDK does not yet support the anthropic-beta header for interleaved thinking
